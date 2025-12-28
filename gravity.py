@@ -1,3 +1,4 @@
+from typing_extensions import Optional
 import pygame
 import logging
 from typing import Iterable, Iterator
@@ -8,7 +9,9 @@ WIDTH = 500
 HEIGHT = 500
 
 POINT_MASS_RENDER_COLOR = (255, 255, 255)
+POINT_MASS_RENDER_SELECTED_COLOR = (255, 0, 0)
 POINT_MASS_RENDER_RADIUS = 4
+SELECTION_DISTANCE_SQUARED = 20
 
 LEFT_MOUSE_BUTTON = 1
 RIGHT_MOUSE_BUTTON = 3
@@ -34,19 +37,35 @@ PAUSE_ICON = PauseIconDefinition(
 
 @dataclass
 class PointMass:
-    x: int
-    y: int
-    mass: int
+    x: float
+    y: float
+    mass: float
 
 
 class PointMassDirector(Iterable[PointMass]):
     def __init__(self) -> None:
         self._masses: list[PointMass] = []
+        self._selected: Optional[PointMass] = None
 
-    def create(self, x: int, y: int) -> PointMass:
-        p = PointMass(x, y, 1)
+    def create(self, x: float, y: float) -> PointMass:
+        p = PointMass(x, y, 1.0)
         self._masses.append(p)
         return p
+
+    def select(self, x: float, y: float) -> None:
+        best = None
+        best_dist = SELECTION_DISTANCE_SQUARED + 1.0
+        for p in self._masses:
+            d = (p.x - x)**2 + (p.y - y)**2
+            if d > SELECTION_DISTANCE_SQUARED:
+                continue
+            if d < best_dist:
+                best = p
+                best_dist = d
+        self._selected = best
+
+    def is_selected(self, p: PointMass) -> bool:
+        return p is self._selected
 
     def __iter__(self) -> Iterator[PointMass]:
         return iter(self._masses)
@@ -93,6 +112,8 @@ class EventHandler:
     def on_MouseButtonDown(self, event: pygame.event.Event) -> None:
         if event.button == LEFT_MOUSE_BUTTON:
             self.game.points.create(*event.pos)
+        elif event.button == RIGHT_MOUSE_BUTTON:
+            self.game.points.select(*event.pos)
 
     def on_KeyDown(self, event: pygame.event.Event) -> None:
         if event.key == pygame.K_SPACE:
@@ -126,11 +147,15 @@ class Renderer:
         if game.is_paused():
             self._render_paused_icon(game.paused_alpha, (50, 50), PAUSE_ICON)
 
-    def _render_point_masses(self, points: Iterable[PointMass]) -> None:
+    def _render_point_masses(self, points: PointMassDirector) -> None:
         for p in points:
+            color = POINT_MASS_RENDER_COLOR
+            if points.is_selected(p):
+                color = POINT_MASS_RENDER_SELECTED_COLOR
+
             pygame.draw.circle(
                 self.screen,
-                POINT_MASS_RENDER_COLOR,
+                color,
                 (p.x, p.y),
                 POINT_MASS_RENDER_RADIUS,
             )
