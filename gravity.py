@@ -695,9 +695,9 @@ def main() -> int:
 
     #initialize with a bunch of point masses
     import random
-    w = 200
-    h = 200
-    for i in range(25):
+    w = 300
+    h = 300
+    for i in range(50):
         game.points.create(
             pygame.Vector2(
                 random.uniform(-w//2, w//2),
