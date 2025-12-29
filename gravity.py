@@ -7,6 +7,8 @@ import math
 WIDTH = 700
 HEIGHT = 500
 
+PHYSICS_TIME_DELTA = 1 / 500
+
 GRAVITATIONAL_CONSTANT = 500
 SOFTENING_FACTOR = 1
 MASS_MERGE_DISTANCE_SQUARED = 0.75
@@ -361,6 +363,8 @@ class GameState:
         self._paused_timer = 0.0
         self.paused_alpha = 255
 
+        self._physics_loop_accumulator = 0.0
+
         self.points = PointMassDirector()
         self.inspector = InspectorUIState()
         self.camera = Camera()
@@ -387,7 +391,7 @@ class GameState:
             self._paused_timer = 0
 
         if not self.is_paused():
-            self.points.update(dt)
+            self._update_physics_loop(dt)
 
         p = self.inspector.get_selected_point()
         if p is not None:
@@ -396,6 +400,12 @@ class GameState:
                 self.inspector.unselect_point()
 
         self.camera_controller.update(p, self.camera, dt)
+
+    def _update_physics_loop(self, dt: float) -> None:
+        self._physics_loop_accumulator += dt
+        while self._physics_loop_accumulator >= PHYSICS_TIME_DELTA:
+            self.points.update(PHYSICS_TIME_DELTA)
+            self._physics_loop_accumulator -= PHYSICS_TIME_DELTA
 
 
 class EventHandler:
@@ -709,8 +719,8 @@ def main() -> int:
     while game.is_running():
         dt = clock.get_time() / 1000.0
         events.handle_events()
-        renderer.render(game)
         game.update(dt)
+        renderer.render(game)
         clock.tick(60)
 
     pygame.quit()
