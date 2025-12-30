@@ -15,8 +15,11 @@ class GameState:
         pause_controller: PauseController,
         cursor_ui_controller: CursorUIController,
         physics_timedelta: float,
+        physics_step_alloted_time_clamp: float,
     ):
         self._physics_timedelta = physics_timedelta
+        self._physics_step_alloted_time_clamp = physics_step_alloted_time_clamp
+
         self.points = points
         self.inspector = inspector
         self.camera = camera
@@ -57,9 +60,8 @@ class GameState:
         self.camera_controller.update(p, self.camera, self.points, dt)
 
     def _update_physics_loop(self, dt: float) -> None:
-        # clamp to prevent runaway computation
-        if dt > 0.25:
-            dt = 0.35
+        if dt > self._physics_step_alloted_time_clamp:
+            dt = self._physics_step_alloted_time_clamp
 
         self._physics_loop_accumulator += dt
         while self._physics_loop_accumulator >= self._physics_timedelta:

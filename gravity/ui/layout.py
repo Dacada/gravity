@@ -1,13 +1,13 @@
-from enum import Enum, auto
+from enum import Enum
 from dataclasses import dataclass
 import pygame
 
 
-class AnchorType(Enum):
-    TOP_LEFT = auto()
-    TOP_RIGHT = auto()
-    BOTTOM_LEFT = auto()
-    BOTTOM_RIGHT = auto()
+class AnchorType(str, Enum):
+    TOP_LEFT = "TOP_LEFT"
+    TOP_RIGHT = "TOP_RIGHT"
+    BOTTOM_LEFT = "BOTTOM_LEFT"
+    BOTTOM_RIGHT = "BOTTOM_RIGHT"
 
 
 @dataclass

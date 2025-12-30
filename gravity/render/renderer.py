@@ -11,12 +11,17 @@ from typing import Optional
 
 
 class Renderer:
-    def __init__(self, layout: Layout, style: RenderStyle) -> None:
+    def __init__(self, layout: Layout, style: RenderStyle, font_name: str, font_size: int) -> None:
         self._layout = layout
         self._style = style
+        self._font_name = font_name
+        self._font_size = font_size
 
         self._screen = self._make_surface()
-        self._font = pygame.font.SysFont("notosansmono", 12)
+        self._font: Optional[pygame.font.Font] = None
+
+    def initialize(self):
+        self._font = pygame.font.SysFont(self._font_name, self._font_size)
 
     def render(self, game: GameState) -> None:
         self._maybe_resize(game)
@@ -110,6 +115,8 @@ class Renderer:
     def _render_text(self, text: str, panel: pygame.Rect, y_offset: int):
         x = panel.x + self._style.inspector.padding[0]
         y = panel.y + self._style.inspector.padding[1] + y_offset
+        if self._font is None:
+            raise RuntimeError("Renderer not initialized")
         text_surface = self._font.render(text, True, self._style.inspector.text_color)
         text_rect = text_surface.get_rect(topleft=(x, y))
         self._screen.blit(text_surface, text_rect)
