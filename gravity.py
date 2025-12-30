@@ -11,17 +11,20 @@ RIGHT_MOUSE_BUTTON = 3
 
 logger = logging.getLogger(__name__)
 
+
 class AnchorType(Enum):
     TOP_LEFT = auto()
     TOP_RIGHT = auto()
     BOTTOM_LEFT = auto()
     BOTTOM_RIGHT = auto()
 
+
 @dataclass
 class LayoutIcon:
     offset_ratio: tuple[float, float]
     size: tuple[int, int]
     anchor: AnchorType
+
 
 class Layout:
     def __init__(
@@ -91,7 +94,6 @@ class Layout:
 
         return pygame.Rect(x, y, w, h)
 
-
     @property
     def pause_icon(self) -> pygame.Rect:
         return self._icon(
@@ -147,7 +149,12 @@ class PointMass:
 
 
 class PointMassSimulator(Iterable[PointMass]):
-    def __init__(self, gravitational_constant: float, softening_factor: float, merge_distance_squared: float) -> None:
+    def __init__(
+        self,
+        gravitational_constant: float,
+        softening_factor: float,
+        merge_distance_squared: float,
+    ) -> None:
         self._gravitational_constant = gravitational_constant
         self._softening_factor = softening_factor
         self._merge_distance_squared = merge_distance_squared
@@ -196,7 +203,6 @@ class PointMassSimulator(Iterable[PointMass]):
             com /= total_mass
 
         return com
-
 
     def update(self, dt: float) -> None:
         self._merge_all_masses()
@@ -262,8 +268,11 @@ class PointMassSimulator(Iterable[PointMass]):
     def __iter__(self) -> Iterator[PointMass]:
         return iter(self._masses)
 
+
 class InspectorUIControlState:
-    def __init__(self, inspector: "InspectorUIState", label: str, attr_name: str) -> None:
+    def __init__(
+        self, inspector: "InspectorUIState", label: str, attr_name: str
+    ) -> None:
         self.label = label
         self._inspector = inspector
         self._attr_name = attr_name
@@ -280,14 +289,15 @@ class InspectorUIControlState:
             return
         return setattr(p, self._attr_name, v)
 
+
 class InspectorUIState:
     def __init__(self) -> None:
         self.controls = [
-            InspectorUIControlState(self, "X Pos", 'x'),
-            InspectorUIControlState(self, "Y Pos", 'y'),
-            InspectorUIControlState(self, "X Vel", 'vx'),
-            InspectorUIControlState(self, "Y Vel", 'vy'),
-            InspectorUIControlState(self, "Mass", 'mass'),
+            InspectorUIControlState(self, "X Pos", "x"),
+            InspectorUIControlState(self, "Y Pos", "y"),
+            InspectorUIControlState(self, "X Vel", "vx"),
+            InspectorUIControlState(self, "Y Vel", "vy"),
+            InspectorUIControlState(self, "Mass", "mass"),
         ]
         self._selected_point_mass: Optional[PointMass] = None
         self._current_idx = 0
@@ -339,7 +349,6 @@ class InspectorUIState:
         self._typing = ""
 
 
-
 class Camera:
     def __init__(self, layout: Layout, pan_speed: float, zoom_factor: float) -> None:
         self._layout = layout
@@ -350,10 +359,14 @@ class Camera:
         self._zoom = 1.0
 
     def world_to_screen(self, world_pos: pygame.Vector2) -> pygame.Vector2:
-        return (world_pos - self._world_center) * self._zoom + self._layout.viewport.center
+        return (
+            world_pos - self._world_center
+        ) * self._zoom + self._layout.viewport.center
 
     def screen_to_world(self, screen_pos: pygame.Vector2) -> pygame.Vector2:
-        return (screen_pos - self._layout.viewport.center) / self._zoom + self._world_center
+        return (
+            screen_pos - self._layout.viewport.center
+        ) / self._zoom + self._world_center
 
     def pan(self, direction: pygame.Vector2, dt: float) -> None:
         self._world_center += direction * dt * self._pan_speed
@@ -369,6 +382,7 @@ class CameraFollowMode(Enum):
     NONE = auto()
     SELECTED_POINT_MASS = auto()
     CENTER_OF_MASS = auto()
+
 
 class CameraController:
     def __init__(self):
@@ -432,10 +446,18 @@ class CameraController:
     def is_follow_center_of_mass_mode(self) -> bool:
         return self._follow_mode == CameraFollowMode.CENTER_OF_MASS
 
-    def update(self, selected: Optional[PointMass], camera: Camera, points: PointMassSimulator, dt: float) -> None:
+    def update(
+        self,
+        selected: Optional[PointMass],
+        camera: Camera,
+        points: PointMassSimulator,
+        dt: float,
+    ) -> None:
         if not self.is_follow_mode_set():
             if self._pan_direction_x or self._pan_direction_y:
-                camera_dir = pygame.Vector2(self._pan_direction_x, self._pan_direction_y)
+                camera_dir = pygame.Vector2(
+                    self._pan_direction_x, self._pan_direction_y
+                )
                 camera_dir = camera_dir.normalize()
                 camera.pan(camera_dir, dt)
 
@@ -468,7 +490,7 @@ class PauseController:
 
     def update(self, dt: float) -> None:
         if self.is_paused():
-            self._paused_timer += dt;
+            self._paused_timer += dt
             alpha = 0.5 * (1 + math.cos(self._animation_speed * self._paused_timer))
             self.icon_alpha = round(255 * alpha)
         else:
@@ -476,16 +498,26 @@ class PauseController:
 
 
 class CursorUIController:
-    def __init__(self, layout: Layout, viewport_clickable_margin: int, selection_distance_squared: float):
+    def __init__(
+        self,
+        layout: Layout,
+        viewport_clickable_margin: int,
+        selection_distance_squared: float,
+    ):
         self._layout = layout
         self._viewport_clickable_margin = viewport_clickable_margin
         self._selection_distance_squared = selection_distance_squared
 
     def is_viewport_click_allowed(self, pos: tuple[int, int]):
         rect = self._layout.viewport
-        return rect.collidepoint(pos) and pos[0] < rect.right - self._viewport_clickable_margin
+        return (
+            rect.collidepoint(pos)
+            and pos[0] < rect.right - self._viewport_clickable_margin
+        )
 
-    def find_closest_point_screen_space(self, points: Iterable[PointMass], camera: Camera, pos_cursor: tuple[int, int]) -> Optional[PointMass]:
+    def find_closest_point_screen_space(
+        self, points: Iterable[PointMass], camera: Camera, pos_cursor: tuple[int, int]
+    ) -> Optional[PointMass]:
         pos = pygame.Vector2(*pos_cursor)
         best = None
         best_dist = self._selection_distance_squared
@@ -499,8 +531,18 @@ class CursorUIController:
 
         return best
 
+
 class GameState:
-    def __init__(self, points: PointMassSimulator, inspector: InspectorUIState, camera: Camera, camera_controller: CameraController, pause_controller: PauseController, cursor_ui_controller: CursorUIController, physics_timedelta: float):
+    def __init__(
+        self,
+        points: PointMassSimulator,
+        inspector: InspectorUIState,
+        camera: Camera,
+        camera_controller: CameraController,
+        pause_controller: PauseController,
+        cursor_ui_controller: CursorUIController,
+        physics_timedelta: float,
+    ):
         self._physics_timedelta = physics_timedelta
         self.points = points
         self.inspector = inspector
@@ -568,7 +610,9 @@ class EventHandler:
                 pos_world = self._game.camera.screen_to_world(pos)
                 self._game.points.create(pos_world)
         elif event.button == RIGHT_MOUSE_BUTTON:
-            p = self._game.cursor_ui_controller.find_closest_point_screen_space(self._game.points, self._game.camera, event.pos)
+            p = self._game.cursor_ui_controller.find_closest_point_screen_space(
+                self._game.points, self._game.camera, event.pos
+            )
             if p is None:
                 self._game.inspector.unselect_point()
             else:
@@ -724,10 +768,12 @@ class EventHandler:
             if callback is not None:
                 callback(event)
 
+
 class IconStyle(ABC):
     @abstractmethod
     def render(self, surface: pygame.Surface, *args):
         pass
+
 
 @dataclass
 class PauseIconStyle(IconStyle):
@@ -740,7 +786,12 @@ class PauseIconStyle(IconStyle):
         alpha = args[0]
         color = (*self.color, alpha)
         pygame.draw.rect(surface, color, (0, 0, self.bar_width, self.bar_height))
-        pygame.draw.rect(surface, color, (self.bar_width + self.gap, 0, self.bar_width, self.bar_height))
+        pygame.draw.rect(
+            surface,
+            color,
+            (self.bar_width + self.gap, 0, self.bar_width, self.bar_height),
+        )
+
 
 @dataclass
 class TargetIconStyle(IconStyle):
@@ -762,13 +813,15 @@ class TargetIconStyle(IconStyle):
 
         def h_bar(x, y):
             pygame.draw.rect(
-                surface, c,
+                surface,
+                c,
                 (x, y, l, t),
             )
 
         def v_bar(x, y):
             pygame.draw.rect(
-                surface, c,
+                surface,
+                c,
                 (x, y, t, l),
             )
 
@@ -800,11 +853,7 @@ class CenterOfMassRingIconStyle(IconStyle):
 
         # Draw central ring
         pygame.draw.circle(
-            surface,
-            self.color,
-            (cx, cy),
-            self.center_radius,
-            self.center_thickness
+            surface, self.color, (cx, cy), self.center_radius, self.center_thickness
         )
 
         # Draw surrounding masses
@@ -814,12 +863,7 @@ class CenterOfMassRingIconStyle(IconStyle):
             x = cx + int(math.cos(angle) * self.dot_distance)
             y = cy + int(math.sin(angle) * self.dot_distance)
 
-            pygame.draw.circle(
-                surface,
-                self.color,
-                (x, y),
-                self.dot_radius
-            )
+            pygame.draw.circle(surface, self.color, (x, y), self.dot_radius)
 
 
 @dataclass
@@ -837,6 +881,7 @@ class PointMassStyle:
     selected_color: tuple[int, int, int]
     radius: int
 
+
 @dataclass
 class RenderStyle:
     pause_icon: IconStyle
@@ -844,6 +889,7 @@ class RenderStyle:
     com_icon: IconStyle
     inspector: InspectorStyle
     point_mass: PointMassStyle
+
 
 class Renderer:
     def __init__(self, layout: Layout, style: RenderStyle) -> None:
@@ -864,7 +910,7 @@ class Renderer:
         if new_size is not None:
             self._layout.resize(*new_size)
             # actually, under wayland this does weird stuff
-            #self._screen = self._make_surface()
+            # self._screen = self._make_surface()
 
     def _make_surface(self) -> pygame.Surface:
         return pygame.display.set_mode(self._layout.rect.size, pygame.RESIZABLE)
@@ -873,11 +919,18 @@ class Renderer:
         self._screen.fill((0, 0, 0))
 
     def _render(self, game: GameState) -> None:
-        self._render_viewport(game.camera, game.points, game.inspector.get_selected_point())
+        self._render_viewport(
+            game.camera, game.points, game.inspector.get_selected_point()
+        )
         self._render_inspector(game.inspector, game.points)
         self._render_overlay(game.pause_controller, game.camera_controller)
 
-    def _render_viewport(self, camera: Camera, points: PointMassSimulator, selected_point: Optional[PointMass]) -> None:
+    def _render_viewport(
+        self,
+        camera: Camera,
+        points: PointMassSimulator,
+        selected_point: Optional[PointMass],
+    ) -> None:
         for p in points:
             color = self._style.point_mass.color
             if selected_point is p:
@@ -892,7 +945,9 @@ class Renderer:
                 self._style.point_mass.radius,
             )
 
-    def _render_inspector(self, inspector: InspectorUIState, points: PointMassSimulator):
+    def _render_inspector(
+        self, inspector: InspectorUIState, points: PointMassSimulator
+    ):
         panel = self._layout.inspector
 
         pygame.draw.rect(
@@ -927,12 +982,11 @@ class Renderer:
         for i, control in enumerate(inspector.controls):
             text = f"{control.label}: {control.get():.3f}"
             if i == inspector.get_current_idx():
-                text += ' ◀ '
+                text += " ◀ "
                 text += inspector.get_typing_input()
 
             self._render_text(text, panel, offset_y)
             offset_y += self._style.inspector.control_separation
-
 
     def _render_text(self, text: str, panel: pygame.Rect, y_offset: int):
         x = panel.x + self._style.inspector.padding[0]
@@ -941,7 +995,9 @@ class Renderer:
         text_rect = text_surface.get_rect(topleft=(x, y))
         self._screen.blit(text_surface, text_rect)
 
-    def _render_overlay(self, pause_controller: PauseController, camera_controller: CameraController) -> None:
+    def _render_overlay(
+        self, pause_controller: PauseController, camera_controller: CameraController
+    ) -> None:
         if pause_controller.is_paused():
             self._render_paused_icon(pause_controller.icon_alpha)
         if camera_controller.is_follow_selected_mass_mode():
@@ -949,7 +1005,9 @@ class Renderer:
         if camera_controller.is_follow_center_of_mass_mode():
             self._render_com_icon()
 
-    def _render_icon(self, layout_rect: pygame.Rect, style: IconStyle, args: tuple[int, ...]) -> None:
+    def _render_icon(
+        self, layout_rect: pygame.Rect, style: IconStyle, args: tuple[int, ...]
+    ) -> None:
         surface = pygame.Surface(layout_rect.size, pygame.SRCALPHA)
         style.render(surface, *args)
         icon_rect = surface.get_rect(center=layout_rect.center)
@@ -987,19 +1045,19 @@ def main() -> int:
     clock = pygame.time.Clock()
 
     pause_icon_layout = LayoutIcon(
-        offset_ratio=(1/20, 1/20),
+        offset_ratio=(1 / 20, 1 / 20),
         size=(40, 50),
         anchor=AnchorType.TOP_LEFT,
     )
     camera_state_icon_layout = LayoutIcon(
-        offset_ratio=(1/50, 49/50),
+        offset_ratio=(1 / 50, 49 / 50),
         size=(50, 50),
         anchor=AnchorType.BOTTOM_LEFT,
     )
     layout = Layout(
         width=700,
         height=500,
-        inspector_ratio=2/7,
+        inspector_ratio=2 / 7,
         pause_icon=pause_icon_layout,
         camera_state_icon=camera_state_icon_layout,
     )
@@ -1030,13 +1088,13 @@ def main() -> int:
         camera_controller=camera_controller,
         pause_controller=pause_controller,
         cursor_ui_controller=cursor_ui_controller,
-        physics_timedelta=1/500,
+        physics_timedelta=1 / 500,
     )
     events = EventHandler(
         game=game,
         layout=layout,
     )
-    pause_icon_style=PauseIconStyle(
+    pause_icon_style = PauseIconStyle(
         color=(255, 255, 255),
         bar_width=10,
         bar_height=50,
@@ -1049,13 +1107,13 @@ def main() -> int:
         corner_length=14,
         corner_thickness=3,
     )
-    com_icon_style=CenterOfMassRingIconStyle(
+    com_icon_style = CenterOfMassRingIconStyle(
         color=(255, 255, 255),
         center_radius=12,
         center_thickness=3,
         dot_radius=3,
         dot_distance=20,
-        dot_count=6
+        dot_count=6,
     )
     inspector_style = InspectorStyle(
         bg_color=(30, 30, 30),
@@ -1081,15 +1139,16 @@ def main() -> int:
         style=render_style,
     )
 
-    #initialize with a bunch of point masses
+    # initialize with a bunch of point masses
     import random
+
     w = 300
     h = 300
     for i in range(50):
         game.points.create(
             pygame.Vector2(
-                random.uniform(-w//2, w//2),
-                random.uniform(-h//2, h//2),
+                random.uniform(-w // 2, w // 2),
+                random.uniform(-h // 2, h // 2),
             ),
             abs(random.gauss(mu=0, sigma=1)),
         )
