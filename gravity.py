@@ -5,11 +5,6 @@ from typing import Iterable, Iterator, Optional
 from dataclasses import dataclass
 import math
 
-PAUSE_ICON_COLOR = (255, 255, 255)
-PAUSE_ICON_BAR_WIDTH = 10
-PAUSE_ICON_GAP = 8
-PAUSED_ANIMATION_SPEED = 2.5
-
 INSPECTOR_BG_COLOR = (30, 30, 30)
 INSPECTOR_BORDER_COLOR = (80, 80, 80)
 INSPECTOR_TEXT_COLOR = (255, 255, 255)
@@ -458,7 +453,9 @@ class CameraController:
 
 
 class PauseController:
-    def __init__(self):
+    def __init__(self, animation_speed: float):
+        self._animation_speed = animation_speed
+
         self._paused = True
         self._paused_timer = 0.0
         self.icon_alpha = 255
@@ -472,7 +469,7 @@ class PauseController:
     def update(self, dt: float) -> None:
         if self.is_paused():
             self._paused_timer += dt;
-            alpha = 0.5 * (1 + math.cos(PAUSED_ANIMATION_SPEED * self._paused_timer))
+            alpha = 0.5 * (1 + math.cos(self._animation_speed * self._paused_timer))
             self.icon_alpha = round(255 * alpha)
         else:
             self._paused_timer = 0
@@ -727,9 +724,23 @@ class EventHandler:
             if callback is not None:
                 callback(event)
 
+@dataclass
+class PauseIconStyle:
+    color: tuple[int, int, int]
+    bar_width: int
+    bar_height: int
+    gap: int
+
+    def render(self, surface: pygame.Surface, alpha: int):
+        color = (*self.color, alpha)
+        pygame.draw.rect(surface, color, (0, 0, self.bar_width, self.bar_height))
+        pygame.draw.rect(surface, color, (self.bar_width + self.gap, 0, self.bar_width, self.bar_height))
+
 class Renderer:
-    def __init__(self, layout: Layout) -> None:
+    def __init__(self, layout: Layout, pause_icon_style: PauseIconStyle) -> None:
         self._layout = layout
+        self._pause_icon_style = pause_icon_style
+
         self._screen = self._make_surface()
         self._font = pygame.font.SysFont("notosansmono", 12)
 
@@ -832,25 +843,8 @@ class Renderer:
 
     def _render_paused_icon(self, alpha: int) -> None:
         icon_rect = self._layout.pause_icon
-
-        icon_surface = pygame.Surface(
-            icon_rect.size,
-            pygame.SRCALPHA
-        )
-        color = (*PAUSE_ICON_COLOR, alpha)
-
-        pygame.draw.rect(
-            icon_surface,
-            color,
-            (0, 0, PAUSE_ICON_BAR_WIDTH, icon_rect.height),
-        )
-
-        pygame.draw.rect(
-            icon_surface,
-            color,
-            (PAUSE_ICON_BAR_WIDTH + PAUSE_ICON_GAP, 0, PAUSE_ICON_BAR_WIDTH, icon_rect.height),
-        )
-
+        icon_surface = pygame.Surface(icon_rect.size, pygame.SRCALPHA)
+        self._pause_icon_style.render(icon_surface, alpha)
         rect = icon_surface.get_rect(center=icon_rect.center)
         self._screen.blit(icon_surface, rect);
 
@@ -880,9 +874,13 @@ def main() -> int:
         merge_distance_squared=0.75,
     )
     inspector = InspectorUIState()
-    camera = Camera(layout)
+    camera = Camera(
+        layout=layout,
+    )
     camera_controller = CameraController()
-    pause_controller = PauseController()
+    pause_controller = PauseController(
+        animation_speed=2.5,
+    )
     cursor_ui_controller = CursorUIController(
         layout=layout,
         viewport_clickable_margin=5,
@@ -897,8 +895,20 @@ def main() -> int:
         cursor_ui_controller=cursor_ui_controller,
         physics_timedelta=1/500,
     )
-    events = EventHandler(game, layout)
-    renderer = Renderer(layout)
+    events = EventHandler(
+        game=game,
+        layout=layout,
+    )
+    pause_icon_style=PauseIconStyle(
+        color=(255, 255, 255),
+        bar_width=10,
+        bar_height=50,
+        gap=8,
+    )
+    renderer = Renderer(
+        layout=layout,
+        pause_icon_style=pause_icon_style,
+    )
 
     #initialize with a bunch of point masses
     import random
