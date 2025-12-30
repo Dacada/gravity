@@ -1,13 +1,11 @@
 from enum import Enum, auto
 import pygame
 import logging
-from typing import Iterable, Iterator, Optional, reveal_type
+from typing import Iterable, Iterator, Optional
 from dataclasses import dataclass
 import math
 
 PHYSICS_TIME_DELTA = 1 / 500
-
-VIEWPORT_CLICKABLE_MARGIN = 5
 
 GRAVITATIONAL_CONSTANT = 500
 SOFTENING_FACTOR = 1
@@ -30,7 +28,6 @@ INSPECTOR_CONTROL_SEPARATION = 15
 POINT_MASS_RENDER_COLOR = (255, 255, 255)
 POINT_MASS_RENDER_SELECTED_COLOR = (255, 0, 0)
 POINT_MASS_RENDER_RADIUS = 4
-SELECTION_DISTANCE_SQUARED = 20
 
 CAMERA_PAN_SPEED = 100
 ZOOM_FACTOR = 1.5
@@ -145,18 +142,6 @@ class PointMassDirector(Iterable[PointMass]):
 
     def get_total(self) -> int:
         return len(self._masses)
-
-    def get_point_for_selection(self, pos: pygame.Vector2) -> Optional[PointMass]:
-        best = None
-        best_dist = SELECTION_DISTANCE_SQUARED + 1.0
-        for p in self._masses:
-            d = (p.x - pos.x)**2 + (p.y - pos.y)**2
-            if d > SELECTION_DISTANCE_SQUARED:
-                continue
-            if d < best_dist:
-                best = p
-                best_dist = d
-        return best
 
     def center_of_mass(self) -> pygame.Vector2:
         total_mass = 0.0
@@ -450,8 +435,32 @@ class PauseController:
             self._paused_timer = 0
 
 
+class CursorUIController:
+    def __init__(self, layout: Layout, viewport_clickable_margin: int, selection_distance_squared: float):
+        self._layout = layout
+        self._viewport_clickable_margin = viewport_clickable_margin
+        self._selection_distance_squared = selection_distance_squared
+
+    def is_viewport_click_allowed(self, pos: tuple[int, int]):
+        rect = self._layout.get_viewport_rect()
+        return rect.collidepoint(pos) and pos[0] < rect.right - self._viewport_clickable_margin
+
+    def find_closest_point_screen_space(self, points: Iterator[PointMass], camera: Camera, pos_cursor: tuple[int, int]) -> Optional[PointMass]:
+        pos = pygame.Vector2(*pos_cursor)
+        best = None
+        best_dist = self._selection_distance_squared
+
+        for p in points:
+            point = camera.world_to_screen(p.pos)
+            d = pos.distance_squared_to(point)
+            if d < best_dist:
+                best = p
+                best_dist = d
+
+        return best
+
 class GameState:
-    def __init__(self, points: PointMassDirector, inspector: InspectorUIState, camera: Camera, camera_controller: CameraController, pause_controller: PauseController):
+    def __init__(self, points: PointMassDirector, inspector: InspectorUIState, camera: Camera, camera_controller: CameraController, pause_controller: PauseController, cursor_ui_controller: CursorUIController):
         self._running = True
         self._physics_loop_accumulator = 0.0
 
@@ -460,6 +469,7 @@ class GameState:
         self.camera = camera
         self.camera_controller = camera_controller
         self.pause_controller = pause_controller
+        self.cursor_ui_controller = cursor_ui_controller
 
     def stop(self) -> None:
         self._running = False
@@ -503,14 +513,12 @@ class EventHandler:
 
     def on_MouseButtonDown(self, event: pygame.event.Event) -> None:
         if event.button == LEFT_MOUSE_BUTTON:
-            if self._layout.get_viewport_rect().collidepoint(event.pos) and event.pos[0] < self._layout.get_viewport_rect().right - VIEWPORT_CLICKABLE_MARGIN:
+            if self._game.cursor_ui_controller.is_viewport_click_allowed(event.pos):
                 pos = pygame.Vector2(*event.pos)
                 pos_world = self._game.camera.screen_to_world(pos)
                 self._game.points.create(pos_world)
         elif event.button == RIGHT_MOUSE_BUTTON:
-            pos = pygame.Vector2(*event.pos)
-            pos_world = self._game.camera.screen_to_world(pos)
-            p = self._game.points.get_point_for_selection(pos_world)
+            p = self._game.cursor_ui_controller.find_closest_point_screen_space(self._game.points, self._game.camera, event.pos)
             if p is None:
                 self._game.inspector.unselect_point()
             else:
@@ -800,7 +808,19 @@ def main() -> int:
     camera = Camera(layout)
     camera_controller = CameraController()
     pause_controller = PauseController()
-    game = GameState(points, inspector, camera, camera_controller, pause_controller)
+    cursor_ui_controller = CursorUIController(
+        layout=layout,
+        viewport_clickable_margin=5,
+        selection_distance_squared=20,
+    )
+    game = GameState(
+        points=points,
+        inspector=inspector,
+        camera=camera,
+        camera_controller=camera_controller,
+        pause_controller=pause_controller,
+        cursor_ui_controller=cursor_ui_controller,
+    )
     events = EventHandler(game, layout)
     renderer = Renderer(layout)
 
