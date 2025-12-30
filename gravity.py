@@ -5,10 +5,6 @@ from typing import Iterable, Iterator, Optional
 from dataclasses import dataclass
 import math
 
-GRAVITATIONAL_CONSTANT = 500
-SOFTENING_FACTOR = 1
-MASS_MERGE_DISTANCE_SQUARED = 0.75
-
 PAUSE_ICON_WIDTH = 40
 PAUSE_ICON_HEIGHT = 50
 PAUSE_ICON_COLOR = (255, 255, 255)
@@ -107,8 +103,12 @@ class PointMass:
         self.vel.y = value
 
 
-class PointMassDirector(Iterable[PointMass]):
-    def __init__(self) -> None:
+class PointMassSimulator(Iterable[PointMass]):
+    def __init__(self, gravitational_constant: float, softening_factor: float, merge_distance_squared: float) -> None:
+        self._gravitational_constant = gravitational_constant
+        self._softening_factor = softening_factor
+        self._merge_distance_squared = merge_distance_squared
+
         self._masses: list[PointMass] = []
 
     def create(self, pos: pygame.Vector2, mass: float = 1.0) -> PointMass:
@@ -175,10 +175,10 @@ class PointMassDirector(Iterable[PointMass]):
         for i in range(n):
             for j in range(i + 1, n):
                 r = self._masses[j].pos - self._masses[i].pos
-                dist_sq = r.length_squared() + SOFTENING_FACTOR
+                dist_sq = r.length_squared() + self._softening_factor
                 inv_dist = 1.0 / math.sqrt(dist_sq)
 
-                factor = GRAVITATIONAL_CONSTANT * inv_dist / dist_sq
+                factor = self._gravitational_constant * inv_dist / dist_sq
 
                 a_i = r * (factor * self._masses[j].mass)
                 a_j = r * (-factor * self._masses[i].mass)
@@ -198,7 +198,7 @@ class PointMassDirector(Iterable[PointMass]):
         for i in range(n):
             for j in range(i + 1, n):
                 r = self._masses[j].pos - self._masses[i].pos
-                if r.length_squared() <= MASS_MERGE_DISTANCE_SQUARED:
+                if r.length_squared() <= self._merge_distance_squared:
                     self._do_merge_masses(i, j)
                     return True
         return False
@@ -392,7 +392,7 @@ class CameraController:
     def is_follow_center_of_mass_mode(self) -> bool:
         return self._follow_mode == CameraFollowMode.CENTER_OF_MASS
 
-    def update(self, selected: Optional[PointMass], camera: Camera, points: PointMassDirector, dt: float) -> None:
+    def update(self, selected: Optional[PointMass], camera: Camera, points: PointMassSimulator, dt: float) -> None:
         if not self.is_follow_mode_set():
             if self._pan_direction_x or self._pan_direction_y:
                 camera_dir = pygame.Vector2(self._pan_direction_x, self._pan_direction_y)
@@ -458,7 +458,7 @@ class CursorUIController:
         return best
 
 class GameState:
-    def __init__(self, points: PointMassDirector, inspector: InspectorUIState, camera: Camera, camera_controller: CameraController, pause_controller: PauseController, cursor_ui_controller: CursorUIController, physics_timedelta: float):
+    def __init__(self, points: PointMassSimulator, inspector: InspectorUIState, camera: Camera, camera_controller: CameraController, pause_controller: PauseController, cursor_ui_controller: CursorUIController, physics_timedelta: float):
         self._physics_timedelta = physics_timedelta
         self.points = points
         self.inspector = inspector
@@ -689,7 +689,7 @@ class Renderer:
         self._render_inspector(game.inspector, game.points, game.camera_controller.is_follow_center_of_mass_mode(), game.camera_controller.is_follow_selected_mass_mode())
         self._render_overlay(game.pause_controller)
 
-    def _render_viewport(self, camera: Camera, points: PointMassDirector, selected_point: Optional[PointMass]) -> None:
+    def _render_viewport(self, camera: Camera, points: PointMassSimulator, selected_point: Optional[PointMass]) -> None:
         for p in points:
             color = POINT_MASS_RENDER_COLOR
             if selected_point is p:
@@ -704,7 +704,7 @@ class Renderer:
                 POINT_MASS_RENDER_RADIUS,
             )
 
-    def _render_inspector(self, inspector: InspectorUIState, points: PointMassDirector, show_follow_com_mode: bool, show_follow_selection_mode: bool):
+    def _render_inspector(self, inspector: InspectorUIState, points: PointMassSimulator, show_follow_com_mode: bool, show_follow_selection_mode: bool):
         panel = self._layout.get_inspector_panel_rect()
 
         pygame.draw.rect(
@@ -802,7 +802,11 @@ def main() -> int:
         pause_icon_offset=(0,0),
         pause_icon_dimensions=(100,100)
     )
-    points = PointMassDirector()
+    points = PointMassSimulator(
+        gravitational_constant=500.0,
+        softening_factor=1.0,
+        merge_distance_squared=0.75,
+    )
     inspector = InspectorUIState()
     camera = Camera(layout)
     camera_controller = CameraController()
