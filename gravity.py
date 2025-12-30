@@ -1,6 +1,7 @@
+from enum import Enum, auto
 import pygame
 import logging
-from typing import Iterable, Iterator, Optional, SupportsFloat
+from typing import Iterable, Iterator, Optional
 from dataclasses import dataclass
 import math
 
@@ -126,6 +127,20 @@ class PointMassDirector(Iterable[PointMass]):
                 best = p
                 best_dist = d
         return best
+
+    def center_of_mass(self) -> pygame.Vector2:
+        total_mass = 0.0
+        com = pygame.Vector2(0.0, 0.0)
+
+        for p in self._masses:
+            com += p.pos * p.mass
+            total_mass += p.mass
+
+        if total_mass > 0:
+            com /= total_mass
+
+        return com
+
 
     def update(self, dt: float) -> None:
         self._merge_all_masses()
@@ -291,12 +306,17 @@ class Camera:
         self._zoom *= ZOOM_FACTOR ** (float(direction) * dt)
 
 
+class CameraFollowMode(Enum):
+    NONE = auto()
+    SELECTED_POINT_MASS = auto()
+    CENTER_OF_MASS = auto()
+
 class CameraController:
     def __init__(self):
         self._pan_direction_x = 0
         self._pan_direction_y = 0
         self._zoom_direction = 0
-        self._follow_mode = False
+        self._follow_mode = CameraFollowMode.NONE
 
     def set_pan_direction_left(self):
         self._pan_direction_x -= 1
@@ -335,14 +355,26 @@ class CameraController:
     def reset_zoom_direction(self):
         self._zoom_direction = 0
 
-    def toggle_follow_mode(self):
-        self._follow_mode = not self._follow_mode
+    def set_follow_mode_selected_mass(self):
+        self._follow_mode = CameraFollowMode.SELECTED_POINT_MASS
 
-    def is_follow_mode(self) -> bool:
-        return self._follow_mode
+    def set_follow_mode_center_of_mass(self):
+        self._follow_mode = CameraFollowMode.CENTER_OF_MASS
 
-    def update(self, selected: Optional[PointMass], camera: Camera, dt: float) -> None:
-        if not self._follow_mode:
+    def unset_follow_mode(self):
+        self._follow_mode = CameraFollowMode.NONE
+
+    def is_follow_mode_set(self):
+        return self._follow_mode != CameraFollowMode.NONE
+
+    def is_follow_selected_mass_mode(self) -> bool:
+        return self._follow_mode == CameraFollowMode.SELECTED_POINT_MASS
+
+    def is_follow_center_of_mass_mode(self) -> bool:
+        return self._follow_mode == CameraFollowMode.CENTER_OF_MASS
+
+    def update(self, selected: Optional[PointMass], camera: Camera, points: PointMassDirector, dt: float) -> None:
+        if not self.is_follow_mode_set():
             if self._pan_direction_x or self._pan_direction_y:
                 camera_dir = pygame.Vector2(self._pan_direction_x, self._pan_direction_y)
                 camera_dir = camera_dir.normalize()
@@ -351,11 +383,14 @@ class CameraController:
         if self._zoom_direction:
             camera.zoom(self._zoom_direction, dt)
 
-        if self._follow_mode:
+        if self.is_follow_selected_mass_mode():
             if selected is None:
-                self._follow_mode = False
+                self._follow_mode = CameraFollowMode.NONE
             else:
                 camera.set_world_center(selected.pos.copy())
+
+        if self.is_follow_center_of_mass_mode():
+            camera.set_world_center(points.center_of_mass())
 
 
 class GameState:
@@ -402,7 +437,7 @@ class GameState:
             if idx is None:
                 self.inspector.unselect_point()
 
-        self.camera_controller.update(p, self.camera, dt)
+        self.camera_controller.update(p, self.camera, self.points, dt)
 
     def _update_physics_loop(self, dt: float) -> None:
         # clamp to prevent runaway computation
@@ -499,8 +534,16 @@ class EventHandler:
                 else:
                     self.game.camera_controller.set_zoom_direction_in()
             if event.key == pygame.K_f:
-                if self.game.inspector.get_selected_point() is not None:
-                    self.game.camera_controller.toggle_follow_mode()
+                if self.game.camera_controller.is_follow_selected_mass_mode():
+                    self.game.camera_controller.unset_follow_mode()
+                else:
+                    if self.game.inspector.get_selected_point() is not None:
+                        self.game.camera_controller.set_follow_mode_selected_mass()
+            if event.key == pygame.K_c:
+                if self.game.camera_controller.is_follow_center_of_mass_mode():
+                    self.game.camera_controller.unset_follow_mode()
+                else:
+                    self.game.camera_controller.set_follow_mode_center_of_mass()
             return True
 
         return False
@@ -598,7 +641,7 @@ class Renderer:
 
     def _render(self, game: GameState) -> None:
         self._render_point_masses(game.points, game.inspector, game.camera)
-        self._render_inspector_panel(game.inspector, game.points, game.camera_controller.is_follow_mode())
+        self._render_inspector_panel(game.inspector, game.points, game.camera_controller.is_follow_selected_mass_mode(), game.camera_controller.is_follow_center_of_mass_mode())
         if game.is_paused():
             self._render_paused_icon(game.paused_alpha, (50, 50))
 
@@ -639,7 +682,7 @@ class Renderer:
         rect = icon_surface.get_rect(center=center)
         self.screen.blit(icon_surface, rect);
 
-    def _render_inspector_panel(self, inspector: InspectorUIState, points: PointMassDirector, follow_mode: bool):
+    def _render_inspector_panel(self, inspector: InspectorUIState, points: PointMassDirector, follow_selection_mode: bool, follow_com_mode: bool):
         pygame.draw.rect(
             self.screen,
             INSPECTOR_BG_COLOR,
@@ -654,6 +697,16 @@ class Renderer:
             1,
         )
 
+        offset_y = 0
+        if follow_com_mode:
+            self._render_text(
+                "[ COM ]",
+                self.inspector_panel_rect.x + INSPECTOR_PADDING_X,
+                self.inspector_panel_rect.y + INSPECTOR_PADDING_Y + offset_y,
+                INSPECTOR_TEXT_COLOR,
+            )
+        offset_y += INSPECTOR_CONTROL_SEPARATION * 2
+
         selected_point = inspector.get_selected_point()
         if selected_point is None:
             return
@@ -664,16 +717,16 @@ class Renderer:
             curr += 1
 
         index_text = f"{curr} / {total}"
-        if follow_mode:
+        if follow_selection_mode:
             index_text += " [F]"
         self._render_text(
             index_text,
             self.inspector_panel_rect.x + INSPECTOR_PADDING_X,
-            self.inspector_panel_rect.y + INSPECTOR_PADDING_Y,
+            self.inspector_panel_rect.y + INSPECTOR_PADDING_Y + offset_y,
             INSPECTOR_TEXT_COLOR,
         )
 
-        offset_y = INSPECTOR_CONTROL_SEPARATION * 2
+        offset_y += INSPECTOR_CONTROL_SEPARATION * 2
         for i, control in enumerate(inspector.controls):
             text = f"{control.label}: {control.get():.3f}"
             if i == inspector.get_current_idx():
