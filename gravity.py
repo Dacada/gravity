@@ -851,15 +851,18 @@ class PointMassStyle:
     selected_color: tuple[int, int, int]
     radius: int
 
+@dataclass
+class RenderStyle:
+    pause_icon: IconStyle
+    target_icon: IconStyle
+    com_icon: IconStyle
+    inspector: InspectorStyle
+    point_mass: PointMassStyle
 
 class Renderer:
-    def __init__(self, layout: Layout, pause_icon_style: IconStyle, target_icon_style: IconStyle, com_icon_style: IconStyle, inspector_style: InspectorStyle, point_mass_style: PointMassStyle) -> None:
+    def __init__(self, layout: Layout, style: RenderStyle) -> None:
         self._layout = layout
-        self._pause_icon_style = pause_icon_style
-        self._target_icon_style = target_icon_style
-        self._com_icon_style = com_icon_style
-        self._inspector_style = inspector_style
-        self._point_mass_style = point_mass_style
+        self._style = style
 
         self._screen = self._make_surface()
         self._font = pygame.font.SysFont("notosansmono", 12)
@@ -890,9 +893,9 @@ class Renderer:
 
     def _render_viewport(self, camera: Camera, points: PointMassSimulator, selected_point: Optional[PointMass]) -> None:
         for p in points:
-            color = self._point_mass_style.color
+            color = self._style.point_mass.color
             if selected_point is p:
-                color = self._point_mass_style.selected_color
+                color = self._style.point_mass.selected_color
 
             screen_space_pos = camera.world_to_screen(p.pos)
 
@@ -900,7 +903,7 @@ class Renderer:
                 self._screen,
                 color,
                 (screen_space_pos.x, screen_space_pos.y),
-                self._point_mass_style.radius,
+                self._style.point_mass.radius,
             )
 
     def _render_inspector(self, inspector: InspectorUIState, points: PointMassSimulator):
@@ -908,13 +911,13 @@ class Renderer:
 
         pygame.draw.rect(
             self._screen,
-            self._inspector_style.bg_color,
+            self._style.inspector.bg_color,
             panel,
         )
 
         pygame.draw.line(
             self._screen,
-            self._inspector_style.border_color,
+            self._style.inspector.border_color,
             panel.topleft,
             panel.bottomleft,
             1,
@@ -933,7 +936,7 @@ class Renderer:
 
         index_text = f"{curr} / {total}"
         self._render_text(index_text, panel, offset_y)
-        offset_y += self._inspector_style.control_separation * 2
+        offset_y += self._style.inspector.control_separation * 2
 
         for i, control in enumerate(inspector.controls):
             text = f"{control.label}: {control.get():.3f}"
@@ -942,13 +945,13 @@ class Renderer:
                 text += inspector.get_typing_input()
 
             self._render_text(text, panel, offset_y)
-            offset_y += self._inspector_style.control_separation
+            offset_y += self._style.inspector.control_separation
 
 
     def _render_text(self, text: str, panel: pygame.Rect, y_offset: int):
-        x = panel.x + self._inspector_style.padding[0]
-        y = panel.y + self._inspector_style.padding[1] + y_offset
-        text_surface = self._font.render(text, True, self._inspector_style.text_color)
+        x = panel.x + self._style.inspector.padding[0]
+        y = panel.y + self._style.inspector.padding[1] + y_offset
+        text_surface = self._font.render(text, True, self._style.inspector.text_color)
         text_rect = text_surface.get_rect(topleft=(x, y))
         self._screen.blit(text_surface, text_rect)
 
@@ -969,21 +972,21 @@ class Renderer:
     def _render_paused_icon(self, alpha: int) -> None:
         self._render_icon(
             self._layout.pause_icon,
-            self._pause_icon_style,
+            self._style.pause_icon,
             (alpha,),
         )
 
     def _render_target_icon(self) -> None:
         self._render_icon(
             self._layout.camera_state_icon,
-            self._target_icon_style,
+            self._style.target_icon,
             (),
         )
 
     def _render_com_icon(self) -> None:
         self._render_icon(
             self._layout.camera_state_icon,
-            self._com_icon_style,
+            self._style.com_icon,
             (),
         )
 
@@ -1072,13 +1075,16 @@ def main() -> int:
         selected_color=(255, 0, 0),
         radius=4,
     )
+    render_style = RenderStyle(
+        pause_icon=pause_icon_style,
+        target_icon=target_icon_style,
+        com_icon=com_icon_style,
+        inspector=inspector_style,
+        point_mass=point_mass_style,
+    )
     renderer = Renderer(
         layout=layout,
-        pause_icon_style=pause_icon_style,
-        target_icon_style=target_icon_style,
-        com_icon_style=com_icon_style,
-        inspector_style=inspector_style,
-        point_mass_style=point_mass_style
+        style=render_style,
     )
 
     #initialize with a bunch of point masses
