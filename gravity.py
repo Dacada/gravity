@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from enum import Enum, auto
 import pygame
 import logging
@@ -24,6 +25,12 @@ RIGHT_MOUSE_BUTTON = 3
 
 logger = logging.getLogger(__name__)
 
+class AnchorType(Enum):
+    TOP_LEFT = auto()
+    TOP_RIGHT = auto()
+    BOTTOM_LEFT = auto()
+    BOTTOM_RIGHT = auto()
+
 class Layout:
     def __init__(
         self,
@@ -32,8 +39,10 @@ class Layout:
         inspector_ratio: float,
         pause_icon_offset_ratio: tuple[float, float],
         pause_icon_size: tuple[int, int],
+        pause_icon_anchor: AnchorType,
         camera_state_icon_offset_ratio: tuple[float, float],
         camera_state_icon_size: tuple[int, int],
+        camera_state_icon_anchor: AnchorType,
     ):
         self._width = width
         self._height = height
@@ -41,8 +50,10 @@ class Layout:
         self._inspector_ratio = inspector_ratio
         self._pause_icon_offset_ratio = pause_icon_offset_ratio
         self._pause_icon_size = pause_icon_size
+        self._pause_icon_anchor = pause_icon_anchor
         self._camera_state_icon_offset_ratio = camera_state_icon_offset_ratio
         self._camera_state_icon_size = camera_state_icon_size
+        self._camera_state_icon_anchor = camera_state_icon_anchor
 
     def resize(self, width: int, height: int) -> None:
         self._width = width
@@ -79,13 +90,25 @@ class Layout:
         parent: pygame.Rect,
         offset_ratio: tuple[float, float],
         size: tuple[int, int],
+        anchor: AnchorType,
     ) -> pygame.Rect:
-        return pygame.Rect(
-            parent.x + int(parent.w * offset_ratio[0]),
-            parent.y + int(parent.h * offset_ratio[1]),
-            size[0],
-            size[1],
-        )
+        x = parent.x + int(parent.w * offset_ratio[0])
+        y = parent.y + int(parent.h * offset_ratio[1])
+
+        w, h = size
+
+        if anchor == AnchorType.TOP_LEFT:
+            pass
+        elif anchor == AnchorType.TOP_RIGHT:
+            x -= w
+        elif anchor == AnchorType.BOTTOM_LEFT:
+            y -= h
+        elif anchor == AnchorType.BOTTOM_RIGHT:
+            x -= w
+            y -= h
+
+        return pygame.Rect(x, y, w, h)
+
 
     @property
     def pause_icon(self) -> pygame.Rect:
@@ -93,6 +116,7 @@ class Layout:
             self.rect,
             self._pause_icon_offset_ratio,
             self._pause_icon_size,
+            self._pause_icon_anchor,
         )
 
     @property
@@ -101,6 +125,7 @@ class Layout:
             self.rect,
             self._camera_state_icon_offset_ratio,
             self._camera_state_icon_size,
+            self._camera_state_icon_anchor,
         )
 
 
@@ -724,22 +749,110 @@ class EventHandler:
             if callback is not None:
                 callback(event)
 
+class IconStyle(ABC):
+    @abstractmethod
+    def render(self, surface: pygame.Surface, *args):
+        pass
+
 @dataclass
-class PauseIconStyle:
+class PauseIconStyle(IconStyle):
     color: tuple[int, int, int]
     bar_width: int
     bar_height: int
     gap: int
 
-    def render(self, surface: pygame.Surface, alpha: int):
+    def render(self, surface: pygame.Surface, *args):
+        alpha = args[0]
         color = (*self.color, alpha)
         pygame.draw.rect(surface, color, (0, 0, self.bar_width, self.bar_height))
         pygame.draw.rect(surface, color, (self.bar_width + self.gap, 0, self.bar_width, self.bar_height))
 
+@dataclass
+class TargetIconStyle(IconStyle):
+    color: tuple[int, int, int]
+    size: int
+    center_radius: int
+    corner_length: int
+    corner_thickness: int
+
+    def render(self, surface: pygame.Surface, *args):
+        s = self.size
+        l = self.corner_length
+        t = self.corner_thickness
+        c = self.color
+
+        cx = cy = s // 2
+
+        pygame.draw.circle(surface, c, (cx, cy), self.center_radius)
+
+        def h_bar(x, y):
+            pygame.draw.rect(
+                surface, c,
+                (x, y, l, t),
+            )
+
+        def v_bar(x, y):
+            pygame.draw.rect(
+                surface, c,
+                (x, y, t, l),
+            )
+
+        h_bar(0, 0)
+        v_bar(0, 0)
+
+        h_bar(s - l, 0)
+        v_bar(s - t, 0)
+
+        h_bar(0, s - t)
+        v_bar(0, s - l)
+
+        h_bar(s - l, s - t)
+        v_bar(s - t, s - l)
+
+
+@dataclass
+class CenterOfMassRingIconStyle(IconStyle):
+    color: tuple[int, int, int]
+    center_radius: int
+    center_thickness: int
+    dot_radius: int
+    dot_distance: int
+    dot_count: int
+
+    def render(self, surface: pygame.Surface, *args):
+        cx = surface.get_width() // 2
+        cy = surface.get_height() // 2
+
+        # Draw central ring
+        pygame.draw.circle(
+            surface,
+            self.color,
+            (cx, cy),
+            self.center_radius,
+            self.center_thickness
+        )
+
+        # Draw surrounding masses
+        for i in range(self.dot_count):
+            angle = i * (2 * math.pi / self.dot_count)
+
+            x = cx + int(math.cos(angle) * self.dot_distance)
+            y = cy + int(math.sin(angle) * self.dot_distance)
+
+            pygame.draw.circle(
+                surface,
+                self.color,
+                (x, y),
+                self.dot_radius
+            )
+
+
 class Renderer:
-    def __init__(self, layout: Layout, pause_icon_style: PauseIconStyle) -> None:
+    def __init__(self, layout: Layout, pause_icon_style: IconStyle, target_icon_style: IconStyle, com_icon_style: IconStyle) -> None:
         self._layout = layout
         self._pause_icon_style = pause_icon_style
+        self._target_icon_style = target_icon_style
+        self._com_icon_style = com_icon_style
 
         self._screen = self._make_surface()
         self._font = pygame.font.SysFont("notosansmono", 12)
@@ -765,8 +878,8 @@ class Renderer:
 
     def _render(self, game: GameState) -> None:
         self._render_viewport(game.camera, game.points, game.inspector.get_selected_point())
-        self._render_inspector(game.inspector, game.points, game.camera_controller.is_follow_center_of_mass_mode(), game.camera_controller.is_follow_selected_mass_mode())
-        self._render_overlay(game.pause_controller)
+        self._render_inspector(game.inspector, game.points)
+        self._render_overlay(game.pause_controller, game.camera_controller)
 
     def _render_viewport(self, camera: Camera, points: PointMassSimulator, selected_point: Optional[PointMass]) -> None:
         for p in points:
@@ -783,7 +896,7 @@ class Renderer:
                 POINT_MASS_RENDER_RADIUS,
             )
 
-    def _render_inspector(self, inspector: InspectorUIState, points: PointMassSimulator, show_follow_com_mode: bool, show_follow_selection_mode: bool):
+    def _render_inspector(self, inspector: InspectorUIState, points: PointMassSimulator):
         panel = self._layout.inspector
 
         pygame.draw.rect(
@@ -801,9 +914,6 @@ class Renderer:
         )
 
         offset_y = 0
-        if show_follow_com_mode:
-            self._render_text("[ COM ]", panel, offset_y)
-        offset_y += INSPECTOR_CONTROL_SEPARATION * 2
 
         selected_point = inspector.get_selected_point()
         if selected_point is None:
@@ -815,8 +925,6 @@ class Renderer:
             curr += 1
 
         index_text = f"{curr} / {total}"
-        if show_follow_selection_mode:
-            index_text += " [F]"
         self._render_text(index_text, panel, offset_y)
         offset_y += INSPECTOR_CONTROL_SEPARATION * 2
 
@@ -837,17 +945,40 @@ class Renderer:
         text_rect = text_surface.get_rect(topleft=(x, y))
         self._screen.blit(text_surface, text_rect)
 
-    def _render_overlay(self, pause_controller: PauseController) -> None:
+    def _render_overlay(self, pause_controller: PauseController, camera_controller: CameraController) -> None:
         if pause_controller.is_paused():
             self._render_paused_icon(pause_controller.icon_alpha)
+        if camera_controller.is_follow_selected_mass_mode():
+            self._render_target_icon()
+        if camera_controller.is_follow_center_of_mass_mode():
+            self._render_com_icon()
+
+    def _render_icon(self, layout_rect: pygame.Rect, style: IconStyle, args: tuple[int, ...]) -> None:
+        surface = pygame.Surface(layout_rect.size, pygame.SRCALPHA)
+        style.render(surface, *args)
+        icon_rect = surface.get_rect(center=layout_rect.center)
+        self._screen.blit(surface, icon_rect)
 
     def _render_paused_icon(self, alpha: int) -> None:
-        icon_rect = self._layout.pause_icon
-        icon_surface = pygame.Surface(icon_rect.size, pygame.SRCALPHA)
-        self._pause_icon_style.render(icon_surface, alpha)
-        rect = icon_surface.get_rect(center=icon_rect.center)
-        self._screen.blit(icon_surface, rect);
+        self._render_icon(
+            self._layout.pause_icon,
+            self._pause_icon_style,
+            (alpha,),
+        )
 
+    def _render_target_icon(self) -> None:
+        self._render_icon(
+            self._layout.camera_state_icon,
+            self._target_icon_style,
+            (),
+        )
+
+    def _render_com_icon(self) -> None:
+        self._render_icon(
+            self._layout.camera_state_icon,
+            self._com_icon_style,
+            (),
+        )
 
 
 def main() -> int:
@@ -865,8 +996,10 @@ def main() -> int:
         inspector_ratio=2/7,
         pause_icon_offset_ratio=(1/20, 1/20),
         pause_icon_size=(40, 50),
-        camera_state_icon_offset_ratio=(1/20, 19/20),
+        pause_icon_anchor=AnchorType.TOP_LEFT,
+        camera_state_icon_offset_ratio=(1/50, 49/50),
         camera_state_icon_size=(50, 50),
+        camera_state_icon_anchor=AnchorType.BOTTOM_LEFT,
     )
     points = PointMassSimulator(
         gravitational_constant=500.0,
@@ -905,9 +1038,26 @@ def main() -> int:
         bar_height=50,
         gap=8,
     )
+    target_icon_style = TargetIconStyle(
+        color=(255, 255, 255),
+        size=48,
+        center_radius=6,
+        corner_length=14,
+        corner_thickness=3,
+    )
+    com_icon_style=CenterOfMassRingIconStyle(
+        color=(255, 255, 255),
+        center_radius=12,
+        center_thickness=3,
+        dot_radius=3,
+        dot_distance=20,
+        dot_count=6
+    )
     renderer = Renderer(
         layout=layout,
         pause_icon_style=pause_icon_style,
+        target_icon_style=target_icon_style,
+        com_icon_style=com_icon_style,
     )
 
     #initialize with a bunch of point masses
