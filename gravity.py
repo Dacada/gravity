@@ -17,29 +17,27 @@ class AnchorType(Enum):
     BOTTOM_LEFT = auto()
     BOTTOM_RIGHT = auto()
 
+@dataclass
+class LayoutIcon:
+    offset_ratio: tuple[float, float]
+    size: tuple[int, int]
+    anchor: AnchorType
+
 class Layout:
     def __init__(
         self,
         width: int,
         height: int,
         inspector_ratio: float,
-        pause_icon_offset_ratio: tuple[float, float],
-        pause_icon_size: tuple[int, int],
-        pause_icon_anchor: AnchorType,
-        camera_state_icon_offset_ratio: tuple[float, float],
-        camera_state_icon_size: tuple[int, int],
-        camera_state_icon_anchor: AnchorType,
+        pause_icon: LayoutIcon,
+        camera_state_icon: LayoutIcon,
     ):
         self._width = width
         self._height = height
 
         self._inspector_ratio = inspector_ratio
-        self._pause_icon_offset_ratio = pause_icon_offset_ratio
-        self._pause_icon_size = pause_icon_size
-        self._pause_icon_anchor = pause_icon_anchor
-        self._camera_state_icon_offset_ratio = camera_state_icon_offset_ratio
-        self._camera_state_icon_size = camera_state_icon_size
-        self._camera_state_icon_anchor = camera_state_icon_anchor
+        self._pause_icon = pause_icon
+        self._camera_state_icon = camera_state_icon
 
     def resize(self, width: int, height: int) -> None:
         self._width = width
@@ -74,22 +72,20 @@ class Layout:
     def _icon(
         self,
         parent: pygame.Rect,
-        offset_ratio: tuple[float, float],
-        size: tuple[int, int],
-        anchor: AnchorType,
+        icon: LayoutIcon,
     ) -> pygame.Rect:
-        x = parent.x + int(parent.w * offset_ratio[0])
-        y = parent.y + int(parent.h * offset_ratio[1])
+        x = parent.x + int(parent.w * icon.offset_ratio[0])
+        y = parent.y + int(parent.h * icon.offset_ratio[1])
 
-        w, h = size
+        w, h = icon.size
 
-        if anchor == AnchorType.TOP_LEFT:
+        if icon.anchor == AnchorType.TOP_LEFT:
             pass
-        elif anchor == AnchorType.TOP_RIGHT:
+        elif icon.anchor == AnchorType.TOP_RIGHT:
             x -= w
-        elif anchor == AnchorType.BOTTOM_LEFT:
+        elif icon.anchor == AnchorType.BOTTOM_LEFT:
             y -= h
-        elif anchor == AnchorType.BOTTOM_RIGHT:
+        elif icon.anchor == AnchorType.BOTTOM_RIGHT:
             x -= w
             y -= h
 
@@ -100,18 +96,14 @@ class Layout:
     def pause_icon(self) -> pygame.Rect:
         return self._icon(
             self.rect,
-            self._pause_icon_offset_ratio,
-            self._pause_icon_size,
-            self._pause_icon_anchor,
+            self._pause_icon,
         )
 
     @property
     def camera_state_icon(self) -> pygame.Rect:
         return self._icon(
             self.rect,
-            self._camera_state_icon_offset_ratio,
-            self._camera_state_icon_size,
-            self._camera_state_icon_anchor,
+            self._camera_state_icon,
         )
 
 
@@ -994,16 +986,22 @@ def main() -> int:
 
     clock = pygame.time.Clock()
 
+    pause_icon_layout = LayoutIcon(
+        offset_ratio=(1/20, 1/20),
+        size=(40, 50),
+        anchor=AnchorType.TOP_LEFT,
+    )
+    camera_state_icon_layout = LayoutIcon(
+        offset_ratio=(1/50, 49/50),
+        size=(50, 50),
+        anchor=AnchorType.BOTTOM_LEFT,
+    )
     layout = Layout(
         width=700,
         height=500,
         inspector_ratio=2/7,
-        pause_icon_offset_ratio=(1/20, 1/20),
-        pause_icon_size=(40, 50),
-        pause_icon_anchor=AnchorType.TOP_LEFT,
-        camera_state_icon_offset_ratio=(1/50, 49/50),
-        camera_state_icon_size=(50, 50),
-        camera_state_icon_anchor=AnchorType.BOTTOM_LEFT,
+        pause_icon=pause_icon_layout,
+        camera_state_icon=camera_state_icon_layout,
     )
     points = PointMassSimulator(
         gravitational_constant=500.0,
