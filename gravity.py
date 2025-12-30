@@ -1,14 +1,13 @@
 from enum import Enum, auto
 import pygame
 import logging
-from typing import Iterable, Iterator, Optional
+from typing import Iterable, Iterator, Optional, reveal_type
 from dataclasses import dataclass
 import math
 
-WIDTH = 700
-HEIGHT = 500
-
 PHYSICS_TIME_DELTA = 1 / 500
+
+VIEWPORT_CLICKABLE_MARGIN = 5
 
 GRAVITATIONAL_CONSTANT = 500
 SOFTENING_FACTOR = 1
@@ -21,8 +20,6 @@ PAUSE_ICON_BAR_WIDTH = 10
 PAUSE_ICON_GAP = 8
 PAUSED_ANIMATION_SPEED = 2.5
 
-INSPECTOR_MARGIN_FOR_POINT_CREATION = 5
-INSPECTOR_WIDTH = 200
 INSPECTOR_BG_COLOR = (30, 30, 30)
 INSPECTOR_BORDER_COLOR = (80, 80, 80)
 INSPECTOR_TEXT_COLOR = (255, 255, 255)
@@ -42,6 +39,39 @@ LEFT_MOUSE_BUTTON = 1
 RIGHT_MOUSE_BUTTON = 3
 
 logger = logging.getLogger(__name__)
+
+class Layout:
+    def __init__(self, height: int, viewport_width: int, inspector_width: int, pause_icon_offset: tuple[int, int], pause_icon_dimensions: tuple[int, int]):
+        self._height = height
+        self._viewport_width = viewport_width
+        self._inspector_width = inspector_width
+        self._pause_icon_offset = pause_icon_offset
+        self._pause_icon_dimensions = pause_icon_dimensions
+
+    def get_viewport_center(self) -> pygame.Vector2:
+        return pygame.Vector2(self._viewport_width / 2, self._height / 2)
+
+    def get_dimensions(self) -> tuple[int, int]:
+        return (self._viewport_width + self._inspector_width, self._height)
+
+    def get_inspector_panel_rect(self) -> pygame.Rect:
+        return pygame.Rect(
+            self._viewport_width, 0,
+            self._inspector_width, self._height,
+        )
+
+    def get_viewport_rect(self) -> pygame.Rect:
+        return pygame.Rect(
+            0, 0,
+            self._viewport_width, self._height,
+        )
+
+    def get_pause_icon_center_location(self) -> pygame.Vector2:
+        return pygame.Vector2(
+            self._pause_icon_offset[0] + self._pause_icon_dimensions[0] / 2,
+            self._pause_icon_offset[1] + self._pause_icon_dimensions[1] / 2,
+        )
+
 
 @dataclass
 class PointMass:
@@ -285,22 +315,28 @@ class InspectorUIState:
 
 
 class Camera:
-    def __init__(self) -> None:
-        self._screen_center = pygame.Vector2((WIDTH - INSPECTOR_WIDTH) / 2, HEIGHT / 2)
+    def __init__(self, layout: Layout, world_center: Optional[pygame.Vector2] = None, zoom: Optional[float] = None) -> None:
+        self._layout = layout
+
         self._world_center = pygame.Vector2(0, 0)
-        self._zoom = 1
+        if world_center is not None:
+            self._world_center = world_center
+
+        self._zoom = 1.0
+        if zoom is not None:
+            self._zoom = zoom
 
     def world_to_screen(self, world_pos: pygame.Vector2) -> pygame.Vector2:
-        return (world_pos - self._world_center) * self._zoom + self._screen_center
+        return (world_pos - self._world_center) * self._zoom + self._layout.get_viewport_center()
 
     def screen_to_world(self, screen_pos: pygame.Vector2) -> pygame.Vector2:
-        return (screen_pos - self._screen_center) / self._zoom + self._world_center
+        return (screen_pos - self._layout.get_viewport_center()) / self._zoom + self._world_center
 
     def pan(self, direction: pygame.Vector2, dt: float) -> None:
         self._world_center += direction * dt * CAMERA_PAN_SPEED
 
-    def set_world_center(self, world_pos: pygame.Vector2):
-        self._world_center = world_pos
+    def set_world_center(self, world_center: pygame.Vector2):
+        self._world_center = world_center
 
     def zoom(self, direction: int, dt: float) -> None:
         self._zoom *= ZOOM_FACTOR ** (float(direction) * dt)
@@ -393,29 +429,14 @@ class CameraController:
             camera.set_world_center(points.center_of_mass())
 
 
-class GameState:
+class PauseController:
     def __init__(self):
-        self._running = True
-
         self._paused = True
         self._paused_timer = 0.0
-        self.paused_alpha = 255
-
-        self._physics_loop_accumulator = 0.0
-
-        self.points = PointMassDirector()
-        self.inspector = InspectorUIState()
-        self.camera = Camera()
-        self.camera_controller = CameraController()
-
-    def stop(self) -> None:
-        self._running = False
+        self.icon_alpha = 255
 
     def toggle_paused(self) -> None:
         self._paused = not self._paused
-
-    def is_running(self) -> bool:
-        return self._running
 
     def is_paused(self) -> bool:
         return self._paused
@@ -424,11 +445,32 @@ class GameState:
         if self.is_paused():
             self._paused_timer += dt;
             alpha = 0.5 * (1 + math.cos(PAUSED_ANIMATION_SPEED * self._paused_timer))
-            self.paused_alpha = round(255 * alpha)
+            self.icon_alpha = round(255 * alpha)
         else:
             self._paused_timer = 0
 
-        if not self.is_paused():
+
+class GameState:
+    def __init__(self, points: PointMassDirector, inspector: InspectorUIState, camera: Camera, camera_controller: CameraController, pause_controller: PauseController):
+        self._running = True
+        self._physics_loop_accumulator = 0.0
+
+        self.points = points
+        self.inspector = inspector
+        self.camera = camera
+        self.camera_controller = camera_controller
+        self.pause_controller = pause_controller
+
+    def stop(self) -> None:
+        self._running = False
+
+    def is_running(self) -> bool:
+        return self._running
+
+    def update(self, dt: float) -> None:
+        self.pause_controller.update(dt)
+
+        if not self.pause_controller.is_paused():
             self._update_physics_loop(dt)
 
         p = self.inspector.get_selected_point()
@@ -451,27 +493,28 @@ class GameState:
 
 
 class EventHandler:
-    def __init__(self, game: GameState) -> None:
-        self.game = game
+    def __init__(self, game: GameState, layout: Layout) -> None:
+        self._game = game
+        self._layout = layout
 
     def on_Quit(self, event: pygame.event.Event) -> None:
         logger.info("received quit event")
-        self.game.stop()
+        self._game.stop()
 
     def on_MouseButtonDown(self, event: pygame.event.Event) -> None:
         if event.button == LEFT_MOUSE_BUTTON:
-            if event.pos[0] < WIDTH - INSPECTOR_WIDTH - INSPECTOR_MARGIN_FOR_POINT_CREATION:
+            if self._layout.get_viewport_rect().collidepoint(event.pos) and event.pos[0] < self._layout.get_viewport_rect().right - VIEWPORT_CLICKABLE_MARGIN:
                 pos = pygame.Vector2(*event.pos)
-                pos_world = self.game.camera.screen_to_world(pos)
-                self.game.points.create(pos_world)
+                pos_world = self._game.camera.screen_to_world(pos)
+                self._game.points.create(pos_world)
         elif event.button == RIGHT_MOUSE_BUTTON:
             pos = pygame.Vector2(*event.pos)
-            pos_world = self.game.camera.screen_to_world(pos)
-            p = self.game.points.get_point_for_selection(pos_world)
+            pos_world = self._game.camera.screen_to_world(pos)
+            p = self._game.points.get_point_for_selection(pos_world)
             if p is None:
-                self.game.inspector.unselect_point()
+                self._game.inspector.unselect_point()
             else:
-                self.game.inspector.set_selected_point(p)
+                self._game.inspector.set_selected_point(p)
 
     def on_KeyDown(self, event: pygame.event.Event) -> None:
         if self._handle_global(event):
@@ -480,7 +523,7 @@ class EventHandler:
         if self._handle_camera(event):
             return
 
-        p = self.game.inspector.get_selected_point()
+        p = self._game.inspector.get_selected_point()
         if p is not None:
             if self._handle_inspector(event, p):
                 return
@@ -493,7 +536,7 @@ class EventHandler:
     def _handle_global(self, event: pygame.event.Event) -> bool:
         # pause/unpause
         if event.key == pygame.K_SPACE:
-            self.game.toggle_paused()
+            self._game.pause_controller.toggle_paused()
             return True
 
         # select via keyboard (maybe from unselected)
@@ -503,17 +546,17 @@ class EventHandler:
                     inc = -1
                 else:
                     inc = 1
-                p = self.game.inspector.get_selected_point()
+                p = self._game.inspector.get_selected_point()
                 if p is not None:
-                    idx = self.game.points.index(p)
+                    idx = self._game.points.index(p)
                     if idx is not None:
-                        q = self.game.points.by_index(idx + inc)
+                        q = self._game.points.by_index(idx + inc)
                         if q is not None:
-                            self.game.inspector.set_selected_point(q)
+                            self._game.inspector.set_selected_point(q)
                 else:
-                    p = self.game.points.by_index(0)
+                    p = self._game.points.by_index(0)
                     if p is not None:
-                        self.game.inspector.set_selected_point(p)
+                        self._game.inspector.set_selected_point(p)
                 return True
 
         return False
@@ -521,72 +564,72 @@ class EventHandler:
     def _handle_camera(self, event: pygame.event.Event) -> bool:
         if event.mod & pygame.KMOD_ALT:
             if event.key == pygame.K_LEFT:
-                self.game.camera_controller.set_pan_direction_left()
+                self._game.camera_controller.set_pan_direction_left()
             if event.key == pygame.K_RIGHT:
-                self.game.camera_controller.set_pan_direction_right()
+                self._game.camera_controller.set_pan_direction_right()
             if event.key == pygame.K_UP:
-                self.game.camera_controller.set_pan_direction_up()
+                self._game.camera_controller.set_pan_direction_up()
             if event.key == pygame.K_DOWN:
-                self.game.camera_controller.set_pan_direction_down()
+                self._game.camera_controller.set_pan_direction_down()
             if event.key == pygame.K_z:
                 if event.mod & pygame.KMOD_SHIFT:
-                    self.game.camera_controller.set_zoom_direction_out()
+                    self._game.camera_controller.set_zoom_direction_out()
                 else:
-                    self.game.camera_controller.set_zoom_direction_in()
+                    self._game.camera_controller.set_zoom_direction_in()
             if event.key == pygame.K_f:
-                if self.game.camera_controller.is_follow_selected_mass_mode():
-                    self.game.camera_controller.unset_follow_mode()
+                if self._game.camera_controller.is_follow_selected_mass_mode():
+                    self._game.camera_controller.unset_follow_mode()
                 else:
-                    if self.game.inspector.get_selected_point() is not None:
-                        self.game.camera_controller.set_follow_mode_selected_mass()
+                    if self._game.inspector.get_selected_point() is not None:
+                        self._game.camera_controller.set_follow_mode_selected_mass()
             if event.key == pygame.K_c:
-                if self.game.camera_controller.is_follow_center_of_mass_mode():
-                    self.game.camera_controller.unset_follow_mode()
+                if self._game.camera_controller.is_follow_center_of_mass_mode():
+                    self._game.camera_controller.unset_follow_mode()
                 else:
-                    self.game.camera_controller.set_follow_mode_center_of_mass()
+                    self._game.camera_controller.set_follow_mode_center_of_mass()
             return True
 
         return False
 
     def _handle_camera_keyup(self, event: pygame.event.Event) -> None:
         if event.key == pygame.K_LEFT:
-            self.game.camera_controller.reset_pan_direction_left()
+            self._game.camera_controller.reset_pan_direction_left()
         if event.key == pygame.K_RIGHT:
-            self.game.camera_controller.reset_pan_direction_right()
+            self._game.camera_controller.reset_pan_direction_right()
         if event.key == pygame.K_UP:
-            self.game.camera_controller.reset_pan_direction_up()
+            self._game.camera_controller.reset_pan_direction_up()
         if event.key == pygame.K_DOWN:
-            self.game.camera_controller.reset_pan_direction_down()
+            self._game.camera_controller.reset_pan_direction_down()
         if event.key == pygame.K_z:
-            self.game.camera_controller.reset_zoom_direction()
+            self._game.camera_controller.reset_zoom_direction()
 
     def _handle_inspector(self, event: pygame.event.Event, p: PointMass) -> bool:
         # delete selection
         if event.key == pygame.K_DELETE:
-            self.game.inspector.unselect_point()
-            self.game.points.delete(p)
+            self._game.inspector.unselect_point()
+            self._game.points.delete(p)
             return True
 
         # navigate inspector via tab
         if event.key == pygame.K_TAB:
             if event.mod & pygame.KMOD_SHIFT:
-                self.game.inspector.cycle_backward()
+                self._game.inspector.cycle_backward()
             else:
-                self.game.inspector.cycle_forward()
+                self._game.inspector.cycle_forward()
             return True
 
         # navigate inspector via up/down
         if not (event.mod & pygame.KMOD_ALT):
             if event.key == pygame.K_UP:
-                self.game.inspector.cycle_backward()
+                self._game.inspector.cycle_backward()
                 return True
             if event.key == pygame.K_DOWN:
-                self.game.inspector.cycle_forward()
+                self._game.inspector.cycle_forward()
                 return True
 
         # reset inspector state and unselect
         if event.key == pygame.K_ESCAPE:
-            self.game.inspector.reset()
+            self._game.inspector.reset()
             return True
 
         return False
@@ -594,18 +637,18 @@ class EventHandler:
     def _handle_text_input(self, event: pygame.event.Event) -> bool:
         # remove latest inputted character
         if event.key == pygame.K_BACKSPACE:
-            self.game.inspector.type_backspace()
+            self._game.inspector.type_backspace()
             return True
 
         # commit typed text in inspector value
         if event.key == pygame.K_RETURN:
-            self.game.inspector.try_commit()
+            self._game.inspector.try_commit()
             return True
 
         # input character if visible character
         char = event.unicode
         if char:
-            self.game.inspector.type_input(char)
+            self._game.inspector.type_input(char)
             return True
 
         return False
@@ -621,15 +664,10 @@ class EventHandler:
                 callback(event)
 
 class Renderer:
-    def __init__(self, screen: pygame.Surface) -> None:
-        self.screen = screen
-        self.font = pygame.font.SysFont("notosansmono", 12)
-        self.inspector_panel_rect = pygame.Rect(
-            WIDTH - INSPECTOR_WIDTH,
-            0,
-            INSPECTOR_WIDTH,
-            HEIGHT,
-        )
+    def __init__(self, layout: Layout) -> None:
+        self._layout = layout
+        self._screen = pygame.display.set_mode(layout.get_dimensions())
+        self._font = pygame.font.SysFont("notosansmono", 12)
 
     def render(self, game: GameState) -> None:
         self._clear()
@@ -637,30 +675,87 @@ class Renderer:
         pygame.display.flip()
 
     def _clear(self) -> None:
-        self.screen.fill((0, 0, 0))
+        self._screen.fill((0, 0, 0))
 
     def _render(self, game: GameState) -> None:
-        self._render_point_masses(game.points, game.inspector, game.camera)
-        self._render_inspector_panel(game.inspector, game.points, game.camera_controller.is_follow_selected_mass_mode(), game.camera_controller.is_follow_center_of_mass_mode())
-        if game.is_paused():
-            self._render_paused_icon(game.paused_alpha, (50, 50))
+        self._render_viewport(game.camera, game.points, game.inspector.get_selected_point())
+        self._render_inspector(game.inspector, game.points, game.camera_controller.is_follow_center_of_mass_mode(), game.camera_controller.is_follow_selected_mass_mode())
+        self._render_overlay(game.pause_controller)
 
-    def _render_point_masses(self, points: Iterable[PointMass], inspector: InspectorUIState, camera: Camera) -> None:
+    def _render_viewport(self, camera: Camera, points: PointMassDirector, selected_point: Optional[PointMass]) -> None:
         for p in points:
             color = POINT_MASS_RENDER_COLOR
-            if inspector.get_selected_point() is p:
+            if selected_point is p:
                 color = POINT_MASS_RENDER_SELECTED_COLOR
 
             screen_space_pos = camera.world_to_screen(p.pos)
 
             pygame.draw.circle(
-                self.screen,
+                self._screen,
                 color,
                 (screen_space_pos.x, screen_space_pos.y),
                 POINT_MASS_RENDER_RADIUS,
             )
 
-    def _render_paused_icon(self, alpha: int, center: tuple[int, int]) -> None:
+    def _render_inspector(self, inspector: InspectorUIState, points: PointMassDirector, show_follow_com_mode: bool, show_follow_selection_mode: bool):
+        panel = self._layout.get_inspector_panel_rect()
+
+        pygame.draw.rect(
+            self._screen,
+            INSPECTOR_BG_COLOR,
+            panel,
+        )
+
+        pygame.draw.line(
+            self._screen,
+            INSPECTOR_BORDER_COLOR,
+            panel.topleft,
+            panel.bottomleft,
+            1,
+        )
+
+        offset_y = 0
+        if show_follow_com_mode:
+            self._render_text("[ COM ]", panel, offset_y)
+        offset_y += INSPECTOR_CONTROL_SEPARATION * 2
+
+        selected_point = inspector.get_selected_point()
+        if selected_point is None:
+            return
+
+        total = points.get_total()
+        curr = points.index(selected_point)
+        if curr is not None:
+            curr += 1
+
+        index_text = f"{curr} / {total}"
+        if show_follow_selection_mode:
+            index_text += " [F]"
+        self._render_text(index_text, panel, offset_y)
+        offset_y += INSPECTOR_CONTROL_SEPARATION * 2
+
+        for i, control in enumerate(inspector.controls):
+            text = f"{control.label}: {control.get():.3f}"
+            if i == inspector.get_current_idx():
+                text += ' ◀ '
+                text += inspector.get_typing_input()
+
+            self._render_text(text, panel, offset_y)
+            offset_y += INSPECTOR_CONTROL_SEPARATION
+
+
+    def _render_text(self, text: str, panel: pygame.Rect, y_offset: int):
+        x = panel.x + INSPECTOR_PADDING_X
+        y = panel.y + INSPECTOR_PADDING_Y + y_offset
+        text_surface = self._font.render(text, True, INSPECTOR_TEXT_COLOR)
+        text_rect = text_surface.get_rect(topleft=(x, y))
+        self._screen.blit(text_surface, text_rect)
+
+    def _render_overlay(self, pause_controller: PauseController) -> None:
+        if pause_controller.is_paused():
+            self._render_paused_icon(pause_controller.icon_alpha)
+
+    def _render_paused_icon(self, alpha: int) -> None:
         icon_surface = pygame.Surface(
             (PAUSE_ICON_WIDTH, PAUSE_ICON_HEIGHT),
             pygame.SRCALPHA
@@ -679,74 +774,8 @@ class Renderer:
             (PAUSE_ICON_BAR_WIDTH + PAUSE_ICON_GAP, 0, PAUSE_ICON_BAR_WIDTH, PAUSE_ICON_HEIGHT),
         )
 
-        rect = icon_surface.get_rect(center=center)
-        self.screen.blit(icon_surface, rect);
-
-    def _render_inspector_panel(self, inspector: InspectorUIState, points: PointMassDirector, follow_selection_mode: bool, follow_com_mode: bool):
-        pygame.draw.rect(
-            self.screen,
-            INSPECTOR_BG_COLOR,
-            self.inspector_panel_rect,
-        )
-
-        pygame.draw.line(
-            self.screen,
-            INSPECTOR_BORDER_COLOR,
-            self.inspector_panel_rect.topleft,
-            self.inspector_panel_rect.bottomleft,
-            1,
-        )
-
-        offset_y = 0
-        if follow_com_mode:
-            self._render_text(
-                "[ COM ]",
-                self.inspector_panel_rect.x + INSPECTOR_PADDING_X,
-                self.inspector_panel_rect.y + INSPECTOR_PADDING_Y + offset_y,
-                INSPECTOR_TEXT_COLOR,
-            )
-        offset_y += INSPECTOR_CONTROL_SEPARATION * 2
-
-        selected_point = inspector.get_selected_point()
-        if selected_point is None:
-            return
-
-        total = points.get_total()
-        curr = points.index(selected_point)
-        if curr is not None:
-            curr += 1
-
-        index_text = f"{curr} / {total}"
-        if follow_selection_mode:
-            index_text += " [F]"
-        self._render_text(
-            index_text,
-            self.inspector_panel_rect.x + INSPECTOR_PADDING_X,
-            self.inspector_panel_rect.y + INSPECTOR_PADDING_Y + offset_y,
-            INSPECTOR_TEXT_COLOR,
-        )
-
-        offset_y += INSPECTOR_CONTROL_SEPARATION * 2
-        for i, control in enumerate(inspector.controls):
-            text = f"{control.label}: {control.get():.3f}"
-            if i == inspector.get_current_idx():
-                text += ' ◀ '
-                text += inspector.get_typing_input()
-
-            self._render_text(
-                text,
-                self.inspector_panel_rect.x + INSPECTOR_PADDING_X,
-                self.inspector_panel_rect.y + INSPECTOR_PADDING_Y + offset_y,
-                INSPECTOR_TEXT_COLOR,
-            )
-
-            offset_y += INSPECTOR_CONTROL_SEPARATION
-
-
-    def _render_text(self, text: str, x: int, y: int, color: tuple[int, int, int]):
-        text_surface = self.font.render(text, True, color)
-        text_rect = text_surface.get_rect(topleft=(x, y))
-        self.screen.blit(text_surface, text_rect)
+        rect = icon_surface.get_rect(center=self._layout.get_pause_icon_center_location())
+        self._screen.blit(icon_surface, rect);
 
 
 
@@ -755,13 +784,25 @@ def main() -> int:
 
     pygame.init()
     pygame.font.init()
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Gravity")
+
     clock = pygame.time.Clock()
 
-    game = GameState()
-    events = EventHandler(game)
-    renderer = Renderer(screen)
+    layout = Layout(
+        height=500,
+        viewport_width=500,
+        inspector_width=200,
+        pause_icon_offset=(0,0),
+        pause_icon_dimensions=(100,100)
+    )
+    points = PointMassDirector()
+    inspector = InspectorUIState()
+    camera = Camera(layout)
+    camera_controller = CameraController()
+    pause_controller = PauseController()
+    game = GameState(points, inspector, camera, camera_controller, pause_controller)
+    events = EventHandler(game, layout)
+    renderer = Renderer(layout)
 
     #initialize with a bunch of point masses
     import random
