@@ -80,9 +80,6 @@ class PointMass:
     def vy(self, value: float) -> None:
         self.vel.y = value
 
-    def update(self, dt: float):
-        self.pos += self.vel * dt
-
 
 class PointMassDirector(Iterable[PointMass]):
     def __init__(self) -> None:
@@ -133,15 +130,25 @@ class PointMassDirector(Iterable[PointMass]):
     def update(self, dt: float) -> None:
         self._merge_all_masses()
 
-        n = len(self._masses)
+        acc_old = self._compute_accelerations()
 
+        for i, p in enumerate(self._masses):
+            p.pos += p.vel * dt + 0.5 * acc_old[i] * dt * dt
+
+        acc_new = self._compute_accelerations()
+
+        for i, p in enumerate(self._masses):
+            p.vel += 0.5 * (acc_old[i] + acc_new[i]) * dt
+
+    def _compute_accelerations(self) -> list[pygame.Vector2]:
+        n = len(self._masses)
         acc = [pygame.Vector2(0.0, 0.0) for _ in range(n)]
 
         for i in range(n):
             for j in range(i + 1, n):
                 r = self._masses[j].pos - self._masses[i].pos
                 dist_sq = r.length_squared() + SOFTENING_FACTOR
-                inv_dist = 1.0 / dist_sq**0.5
+                inv_dist = 1.0 / math.sqrt(dist_sq)
 
                 factor = GRAVITATIONAL_CONSTANT * inv_dist / dist_sq
 
@@ -151,11 +158,7 @@ class PointMassDirector(Iterable[PointMass]):
                 acc[i] += a_i
                 acc[j] += a_j
 
-        for i in range(n):
-            self._masses[i].vel += acc[i] * dt
-
-        for p in self._masses:
-            p.update(dt)
+        return acc
 
     def _merge_all_masses(self) -> None:
         while self._merge_masses():
@@ -402,6 +405,10 @@ class GameState:
         self.camera_controller.update(p, self.camera, dt)
 
     def _update_physics_loop(self, dt: float) -> None:
+        # clamp to prevent runaway computation
+        if dt > 0.25:
+            dt = 0.35
+
         self._physics_loop_accumulator += dt
         while self._physics_loop_accumulator >= PHYSICS_TIME_DELTA:
             self.points.update(PHYSICS_TIME_DELTA)
