@@ -5,8 +5,6 @@ from typing import Iterable, Iterator, Optional
 from dataclasses import dataclass
 import math
 
-PHYSICS_TIME_DELTA = 1 / 500
-
 GRAVITATIONAL_CONSTANT = 500
 SOFTENING_FACTOR = 1
 MASS_MERGE_DISTANCE_SQUARED = 0.75
@@ -460,16 +458,17 @@ class CursorUIController:
         return best
 
 class GameState:
-    def __init__(self, points: PointMassDirector, inspector: InspectorUIState, camera: Camera, camera_controller: CameraController, pause_controller: PauseController, cursor_ui_controller: CursorUIController):
-        self._running = True
-        self._physics_loop_accumulator = 0.0
-
+    def __init__(self, points: PointMassDirector, inspector: InspectorUIState, camera: Camera, camera_controller: CameraController, pause_controller: PauseController, cursor_ui_controller: CursorUIController, physics_timedelta: float):
+        self._physics_timedelta = physics_timedelta
         self.points = points
         self.inspector = inspector
         self.camera = camera
         self.camera_controller = camera_controller
         self.pause_controller = pause_controller
         self.cursor_ui_controller = cursor_ui_controller
+
+        self._running = True
+        self._physics_loop_accumulator = 0.0
 
     def stop(self) -> None:
         self._running = False
@@ -497,9 +496,9 @@ class GameState:
             dt = 0.35
 
         self._physics_loop_accumulator += dt
-        while self._physics_loop_accumulator >= PHYSICS_TIME_DELTA:
-            self.points.update(PHYSICS_TIME_DELTA)
-            self._physics_loop_accumulator -= PHYSICS_TIME_DELTA
+        while self._physics_loop_accumulator >= self._physics_timedelta:
+            self.points.update(self._physics_timedelta)
+            self._physics_loop_accumulator -= self._physics_timedelta
 
 
 class EventHandler:
@@ -820,6 +819,7 @@ def main() -> int:
         camera_controller=camera_controller,
         pause_controller=pause_controller,
         cursor_ui_controller=cursor_ui_controller,
+        physics_timedelta=1/500,
     )
     events = EventHandler(game, layout)
     renderer = Renderer(layout)
