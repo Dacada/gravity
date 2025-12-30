@@ -6,13 +6,6 @@ from typing import Iterable, Iterator, Optional
 from dataclasses import dataclass
 import math
 
-INSPECTOR_BG_COLOR = (30, 30, 30)
-INSPECTOR_BORDER_COLOR = (80, 80, 80)
-INSPECTOR_TEXT_COLOR = (255, 255, 255)
-INSPECTOR_PADDING_X = 20
-INSPECTOR_PADDING_Y = 50
-INSPECTOR_CONTROL_SEPARATION = 15
-
 POINT_MASS_RENDER_COLOR = (255, 255, 255)
 POINT_MASS_RENDER_SELECTED_COLOR = (255, 0, 0)
 POINT_MASS_RENDER_RADIUS = 4
@@ -847,12 +840,22 @@ class CenterOfMassRingIconStyle(IconStyle):
             )
 
 
+@dataclass
+class InspectorStyle:
+    bg_color: tuple[int, int, int]
+    border_color: tuple[int, int, int]
+    text_color: tuple[int, int, int]
+    padding: tuple[int, int]
+    control_separation: int
+
+
 class Renderer:
-    def __init__(self, layout: Layout, pause_icon_style: IconStyle, target_icon_style: IconStyle, com_icon_style: IconStyle) -> None:
+    def __init__(self, layout: Layout, pause_icon_style: IconStyle, target_icon_style: IconStyle, com_icon_style: IconStyle, inspector_style: InspectorStyle) -> None:
         self._layout = layout
         self._pause_icon_style = pause_icon_style
         self._target_icon_style = target_icon_style
         self._com_icon_style = com_icon_style
+        self._inspector_style = inspector_style
 
         self._screen = self._make_surface()
         self._font = pygame.font.SysFont("notosansmono", 12)
@@ -901,13 +904,13 @@ class Renderer:
 
         pygame.draw.rect(
             self._screen,
-            INSPECTOR_BG_COLOR,
+            self._inspector_style.bg_color,
             panel,
         )
 
         pygame.draw.line(
             self._screen,
-            INSPECTOR_BORDER_COLOR,
+            self._inspector_style.border_color,
             panel.topleft,
             panel.bottomleft,
             1,
@@ -926,7 +929,7 @@ class Renderer:
 
         index_text = f"{curr} / {total}"
         self._render_text(index_text, panel, offset_y)
-        offset_y += INSPECTOR_CONTROL_SEPARATION * 2
+        offset_y += self._inspector_style.control_separation * 2
 
         for i, control in enumerate(inspector.controls):
             text = f"{control.label}: {control.get():.3f}"
@@ -935,13 +938,13 @@ class Renderer:
                 text += inspector.get_typing_input()
 
             self._render_text(text, panel, offset_y)
-            offset_y += INSPECTOR_CONTROL_SEPARATION
+            offset_y += self._inspector_style.control_separation
 
 
     def _render_text(self, text: str, panel: pygame.Rect, y_offset: int):
-        x = panel.x + INSPECTOR_PADDING_X
-        y = panel.y + INSPECTOR_PADDING_Y + y_offset
-        text_surface = self._font.render(text, True, INSPECTOR_TEXT_COLOR)
+        x = panel.x + self._inspector_style.padding[0]
+        y = panel.y + self._inspector_style.padding[1] + y_offset
+        text_surface = self._font.render(text, True, self._inspector_style.text_color)
         text_rect = text_surface.get_rect(topleft=(x, y))
         self._screen.blit(text_surface, text_rect)
 
@@ -1053,11 +1056,19 @@ def main() -> int:
         dot_distance=20,
         dot_count=6
     )
+    inspector_style = InspectorStyle(
+        bg_color=(30, 30, 30),
+        border_color=(80, 80, 80),
+        text_color=(255, 255, 255),
+        padding=(20, 50),
+        control_separation=15,
+    )
     renderer = Renderer(
         layout=layout,
         pause_icon_style=pause_icon_style,
         target_icon_style=target_icon_style,
         com_icon_style=com_icon_style,
+        inspector_style=inspector_style,
     )
 
     #initialize with a bunch of point masses
