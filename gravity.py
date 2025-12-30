@@ -5,8 +5,6 @@ from typing import Iterable, Iterator, Optional
 from dataclasses import dataclass
 import math
 
-PAUSE_ICON_WIDTH = 40
-PAUSE_ICON_HEIGHT = 50
 PAUSE_ICON_COLOR = (255, 255, 255)
 PAUSE_ICON_BAR_WIDTH = 10
 PAUSE_ICON_GAP = 8
@@ -32,35 +30,82 @@ RIGHT_MOUSE_BUTTON = 3
 logger = logging.getLogger(__name__)
 
 class Layout:
-    def __init__(self, height: int, viewport_width: int, inspector_width: int, pause_icon_offset: tuple[int, int], pause_icon_dimensions: tuple[int, int]):
+    def __init__(
+        self,
+        width: int,
+        height: int,
+        inspector_ratio: float,
+        pause_icon_offset_ratio: tuple[float, float],
+        pause_icon_size: tuple[int, int],
+        camera_state_icon_offset_ratio: tuple[float, float],
+        camera_state_icon_size: tuple[int, int],
+    ):
+        self._width = width
         self._height = height
-        self._viewport_width = viewport_width
-        self._inspector_width = inspector_width
-        self._pause_icon_offset = pause_icon_offset
-        self._pause_icon_dimensions = pause_icon_dimensions
 
-    def get_viewport_center(self) -> pygame.Vector2:
-        return pygame.Vector2(self._viewport_width / 2, self._height / 2)
+        self._inspector_ratio = inspector_ratio
+        self._pause_icon_offset_ratio = pause_icon_offset_ratio
+        self._pause_icon_size = pause_icon_size
+        self._camera_state_icon_offset_ratio = camera_state_icon_offset_ratio
+        self._camera_state_icon_size = camera_state_icon_size
 
-    def get_dimensions(self) -> tuple[int, int]:
-        return (self._viewport_width + self._inspector_width, self._height)
+    def resize(self, width: int, height: int) -> None:
+        self._width = width
+        self._height = height
 
-    def get_inspector_panel_rect(self) -> pygame.Rect:
+    @property
+    def rect(self) -> pygame.Rect:
+        return pygame.Rect(0, 0, self._width, self._height)
+
+    @property
+    def _split_x(self) -> int:
+        return int(self._width * (1.0 - self._inspector_ratio))
+
+    @property
+    def viewport(self) -> pygame.Rect:
         return pygame.Rect(
-            self._viewport_width, 0,
-            self._inspector_width, self._height,
+            0,
+            0,
+            self._split_x,
+            self._height,
         )
 
-    def get_viewport_rect(self) -> pygame.Rect:
+    @property
+    def inspector(self) -> pygame.Rect:
         return pygame.Rect(
-            0, 0,
-            self._viewport_width, self._height,
+            self._split_x,
+            0,
+            self._width - self._split_x,
+            self._height,
         )
 
-    def get_pause_icon_center_location(self) -> pygame.Vector2:
-        return pygame.Vector2(
-            self._pause_icon_offset[0] + self._pause_icon_dimensions[0] / 2,
-            self._pause_icon_offset[1] + self._pause_icon_dimensions[1] / 2,
+    def _icon(
+        self,
+        parent: pygame.Rect,
+        offset_ratio: tuple[float, float],
+        size: tuple[int, int],
+    ) -> pygame.Rect:
+        return pygame.Rect(
+            parent.x + int(parent.w * offset_ratio[0]),
+            parent.y + int(parent.h * offset_ratio[1]),
+            size[0],
+            size[1],
+        )
+
+    @property
+    def pause_icon(self) -> pygame.Rect:
+        return self._icon(
+            self.rect,
+            self._pause_icon_offset_ratio,
+            self._pause_icon_size,
+        )
+
+    @property
+    def camera_state_icon(self) -> pygame.Rect:
+        return self._icon(
+            self.rect,
+            self._camera_state_icon_offset_ratio,
+            self._camera_state_icon_size,
         )
 
 
@@ -310,10 +355,10 @@ class Camera:
             self._zoom = zoom
 
     def world_to_screen(self, world_pos: pygame.Vector2) -> pygame.Vector2:
-        return (world_pos - self._world_center) * self._zoom + self._layout.get_viewport_center()
+        return (world_pos - self._world_center) * self._zoom + self._layout.viewport.center
 
     def screen_to_world(self, screen_pos: pygame.Vector2) -> pygame.Vector2:
-        return (screen_pos - self._layout.get_viewport_center()) / self._zoom + self._world_center
+        return (screen_pos - self._layout.viewport.center) / self._zoom + self._world_center
 
     def pan(self, direction: pygame.Vector2, dt: float) -> None:
         self._world_center += direction * dt * CAMERA_PAN_SPEED
@@ -440,10 +485,10 @@ class CursorUIController:
         self._selection_distance_squared = selection_distance_squared
 
     def is_viewport_click_allowed(self, pos: tuple[int, int]):
-        rect = self._layout.get_viewport_rect()
+        rect = self._layout.viewport
         return rect.collidepoint(pos) and pos[0] < rect.right - self._viewport_clickable_margin
 
-    def find_closest_point_screen_space(self, points: Iterator[PointMass], camera: Camera, pos_cursor: tuple[int, int]) -> Optional[PointMass]:
+    def find_closest_point_screen_space(self, points: Iterable[PointMass], camera: Camera, pos_cursor: tuple[int, int]) -> Optional[PointMass]:
         pos = pygame.Vector2(*pos_cursor)
         best = None
         best_dist = self._selection_distance_squared
@@ -469,12 +514,21 @@ class GameState:
 
         self._running = True
         self._physics_loop_accumulator = 0.0
+        self._resize: Optional[tuple[int, int]] = None
 
     def stop(self) -> None:
         self._running = False
 
     def is_running(self) -> bool:
         return self._running
+
+    def resize(self, width: int, height: int) -> None:
+        self._resize = (width, height)
+
+    def query_resize(self) -> Optional[tuple[int, int]]:
+        ret = self._resize
+        self._resize = None
+        return ret
 
     def update(self, dt: float) -> None:
         self.pause_controller.update(dt)
@@ -539,6 +593,9 @@ class EventHandler:
 
     def on_KeyUp(self, event: pygame.event.Event) -> None:
         self._handle_camera_keyup(event)
+
+    def on_VideoResize(self, event: pygame.event.Event) -> None:
+        self._game.resize(event.w, event.h)
 
     def _handle_global(self, event: pygame.event.Event) -> bool:
         # pause/unpause
@@ -673,13 +730,24 @@ class EventHandler:
 class Renderer:
     def __init__(self, layout: Layout) -> None:
         self._layout = layout
-        self._screen = pygame.display.set_mode(layout.get_dimensions())
+        self._screen = self._make_surface()
         self._font = pygame.font.SysFont("notosansmono", 12)
 
     def render(self, game: GameState) -> None:
+        self._maybe_resize(game)
         self._clear()
         self._render(game)
         pygame.display.flip()
+
+    def _maybe_resize(self, game: GameState) -> None:
+        new_size = game.query_resize()
+        if new_size is not None:
+            self._layout.resize(*new_size)
+            # actually, under wayland this does weird stuff
+            #self._screen = self._make_surface()
+
+    def _make_surface(self) -> pygame.Surface:
+        return pygame.display.set_mode(self._layout.rect.size, pygame.RESIZABLE)
 
     def _clear(self) -> None:
         self._screen.fill((0, 0, 0))
@@ -705,7 +773,7 @@ class Renderer:
             )
 
     def _render_inspector(self, inspector: InspectorUIState, points: PointMassSimulator, show_follow_com_mode: bool, show_follow_selection_mode: bool):
-        panel = self._layout.get_inspector_panel_rect()
+        panel = self._layout.inspector
 
         pygame.draw.rect(
             self._screen,
@@ -763,8 +831,10 @@ class Renderer:
             self._render_paused_icon(pause_controller.icon_alpha)
 
     def _render_paused_icon(self, alpha: int) -> None:
+        icon_rect = self._layout.pause_icon
+
         icon_surface = pygame.Surface(
-            (PAUSE_ICON_WIDTH, PAUSE_ICON_HEIGHT),
+            icon_rect.size,
             pygame.SRCALPHA
         )
         color = (*PAUSE_ICON_COLOR, alpha)
@@ -772,16 +842,16 @@ class Renderer:
         pygame.draw.rect(
             icon_surface,
             color,
-            (0, 0, PAUSE_ICON_BAR_WIDTH, PAUSE_ICON_HEIGHT),
+            (0, 0, PAUSE_ICON_BAR_WIDTH, icon_rect.height),
         )
 
         pygame.draw.rect(
             icon_surface,
             color,
-            (PAUSE_ICON_BAR_WIDTH + PAUSE_ICON_GAP, 0, PAUSE_ICON_BAR_WIDTH, PAUSE_ICON_HEIGHT),
+            (PAUSE_ICON_BAR_WIDTH + PAUSE_ICON_GAP, 0, PAUSE_ICON_BAR_WIDTH, icon_rect.height),
         )
 
-        rect = icon_surface.get_rect(center=self._layout.get_pause_icon_center_location())
+        rect = icon_surface.get_rect(center=icon_rect.center)
         self._screen.blit(icon_surface, rect);
 
 
@@ -796,11 +866,13 @@ def main() -> int:
     clock = pygame.time.Clock()
 
     layout = Layout(
+        width=700,
         height=500,
-        viewport_width=500,
-        inspector_width=200,
-        pause_icon_offset=(0,0),
-        pause_icon_dimensions=(100,100)
+        inspector_ratio=2/7,
+        pause_icon_offset_ratio=(1/20, 1/20),
+        pause_icon_size=(40, 50),
+        camera_state_icon_offset_ratio=(1/20, 19/20),
+        camera_state_icon_size=(50, 50),
     )
     points = PointMassSimulator(
         gravitational_constant=500.0,
