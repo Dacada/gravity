@@ -6,10 +6,6 @@ from typing import Iterable, Iterator, Optional
 from dataclasses import dataclass
 import math
 
-POINT_MASS_RENDER_COLOR = (255, 255, 255)
-POINT_MASS_RENDER_SELECTED_COLOR = (255, 0, 0)
-POINT_MASS_RENDER_RADIUS = 4
-
 CAMERA_PAN_SPEED = 100
 ZOOM_FACTOR = 1.5
 
@@ -849,13 +845,21 @@ class InspectorStyle:
     control_separation: int
 
 
+@dataclass
+class PointMassStyle:
+    color: tuple[int, int, int]
+    selected_color: tuple[int, int, int]
+    radius: int
+
+
 class Renderer:
-    def __init__(self, layout: Layout, pause_icon_style: IconStyle, target_icon_style: IconStyle, com_icon_style: IconStyle, inspector_style: InspectorStyle) -> None:
+    def __init__(self, layout: Layout, pause_icon_style: IconStyle, target_icon_style: IconStyle, com_icon_style: IconStyle, inspector_style: InspectorStyle, point_mass_style: PointMassStyle) -> None:
         self._layout = layout
         self._pause_icon_style = pause_icon_style
         self._target_icon_style = target_icon_style
         self._com_icon_style = com_icon_style
         self._inspector_style = inspector_style
+        self._point_mass_style = point_mass_style
 
         self._screen = self._make_surface()
         self._font = pygame.font.SysFont("notosansmono", 12)
@@ -886,9 +890,9 @@ class Renderer:
 
     def _render_viewport(self, camera: Camera, points: PointMassSimulator, selected_point: Optional[PointMass]) -> None:
         for p in points:
-            color = POINT_MASS_RENDER_COLOR
+            color = self._point_mass_style.color
             if selected_point is p:
-                color = POINT_MASS_RENDER_SELECTED_COLOR
+                color = self._point_mass_style.selected_color
 
             screen_space_pos = camera.world_to_screen(p.pos)
 
@@ -896,7 +900,7 @@ class Renderer:
                 self._screen,
                 color,
                 (screen_space_pos.x, screen_space_pos.y),
-                POINT_MASS_RENDER_RADIUS,
+                self._point_mass_style.radius,
             )
 
     def _render_inspector(self, inspector: InspectorUIState, points: PointMassSimulator):
@@ -1063,12 +1067,18 @@ def main() -> int:
         padding=(20, 50),
         control_separation=15,
     )
+    point_mass_style = PointMassStyle(
+        color=(255, 255, 255),
+        selected_color=(255, 0, 0),
+        radius=4,
+    )
     renderer = Renderer(
         layout=layout,
         pause_icon_style=pause_icon_style,
         target_icon_style=target_icon_style,
         com_icon_style=com_icon_style,
         inspector_style=inspector_style,
+        point_mass_style=point_mass_style
     )
 
     #initialize with a bunch of point masses
