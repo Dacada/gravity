@@ -137,8 +137,10 @@ class Renderer:
             self._render_paused_icon(pause_controller.icon_alpha)
         if camera_controller.is_follow_selected_mass_mode():
             self._render_target_icon()
-        if camera_controller.is_follow_center_of_mass_mode():
+        elif camera_controller.is_follow_center_of_mass_mode():
             self._render_com_icon()
+        else:
+            self._render_freecamera_icon(camera_controller.get_movement_directions())
 
     def _render_icon(
         self, layout_rect: pygame.Rect, style: IconStyle, kwargs: IconStyleRenderArgs
@@ -167,4 +169,11 @@ class Renderer:
             self._layout.camera_state_icon,
             self._style.com_icon,
             {},
+        )
+
+    def _render_freecamera_icon(self, dirs: tuple[int, int, int]) -> None:
+        self._render_icon(
+            self._layout.camera_state_icon,
+            self._style.freecam_icon,
+            {"dirs": dirs},
         )

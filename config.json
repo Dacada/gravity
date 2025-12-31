@@ -60,6 +60,12 @@
                 "dot_distance": 20,
                 "dot_count": 6
             },
+            "freecam_icon": {
+                "color": [255, 255, 255],
+                "tri_size": 7,
+                "circle_radius": 7,
+                "line_width": 2
+            },
             "inspector": {
                 "bg_color": [30, 30, 30],
                 "border_color": [80, 80, 80],

@@ -7,6 +7,7 @@ import pygame
 
 from gravity.config.schema import (
     AppConfigRenderStyleComIcon,
+    AppConfigRenderStyleFreeCamIcon,
     AppConfigRenderStyleInspector,
     AppConfigRenderStylePauseIcon,
     AppConfigRenderStylePointMass,
@@ -17,6 +18,7 @@ from gravity.config.schema import (
 
 class IconStyleRenderArgs(TypedDict, total=False):
     alpha: int
+    dirs: tuple[int, int, int]
 
 
 class IconStyle(ABC):
@@ -158,6 +160,79 @@ class CenterOfMassRingIconStyle(IconStyle):
 
 
 @dataclass
+class FreeCamIconStyle(IconStyle):
+    color: tuple[int, int, int]
+    tri_size: int
+    circle_radius: int
+    line_width: int
+
+    @classmethod
+    def from_config(cls, cfg: AppConfigRenderStyleFreeCamIcon) -> Self:
+        return cls(
+            cfg.color,
+            cfg.tri_size,
+            cfg.circle_radius,
+            cfg.line_width,
+        )
+
+    def render(
+        self, surface: pygame.Surface, **kwargs: Unpack[IconStyleRenderArgs]
+    ) -> None:
+        dirs = kwargs.get("dirs")
+        if dirs is None:
+            raise RuntimeError("missing dirs value for free camera icon render")
+
+        dx, dy, dz = dirs
+        w, h = surface.get_size()
+        cx, cy = w // 2, h // 2
+        c = self.color
+
+        # X direction (left / right)
+        if dx != 0:
+            if dx > 0:  # right
+                points = [
+                    (w, cy),
+                    (w - self.tri_size, cy - self.tri_size),
+                    (w - self.tri_size, cy + self.tri_size),
+                ]
+            else:  # left
+                points = [
+                    (0, cy),
+                    (self.tri_size, cy - self.tri_size),
+                    (self.tri_size, cy + self.tri_size),
+                ]
+            pygame.draw.polygon(surface, c, points)
+
+        # Y direction (up / down)
+        if dy != 0:
+            if dy > 0:  # down
+                points = [
+                    (cx, h),
+                    (cx - self.tri_size, h - self.tri_size),
+                    (cx + self.tri_size, h - self.tri_size),
+                ]
+            else:  # up
+                points = [
+                    (cx, 0),
+                    (cx - self.tri_size, self.tri_size),
+                    (cx + self.tri_size, self.tri_size),
+                ]
+            pygame.draw.polygon(surface, c, points)
+
+        # Z direction (zoom)
+        if dz != 0:
+            pygame.draw.circle(
+                surface, c, (cx, cy), self.circle_radius, self.line_width
+            )
+            if dz > 0:
+                # inwards: empty
+                pass
+            else:
+                # outwards: dot
+                pygame.draw.circle(surface, c, (cx, cy), self.line_width * 2)
+
+
+@dataclass
 class InspectorStyle:
     bg_color: tuple[int, int, int]
     border_color: tuple[int, int, int]
@@ -196,6 +271,7 @@ class RenderStyle:
     pause_icon: IconStyle
     target_icon: IconStyle
     com_icon: IconStyle
+    freecam_icon: IconStyle
     inspector: InspectorStyle
     point_mass: PointMassStyle
 
@@ -205,6 +281,7 @@ class RenderStyle:
             PauseIconStyle.from_config(cfg.pause_icon),
             TargetIconStyle.from_config(cfg.target_icon),
             CenterOfMassRingIconStyle.from_config(cfg.com_icon),
+            FreeCamIconStyle.from_config(cfg.freecam_icon),
             InspectorStyle.from_config(cfg.inspector),
             PointMassStyle.from_config(cfg.point_mass),
         )

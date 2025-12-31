@@ -118,6 +118,13 @@ class AppConfigRenderStyleComIcon(BaseModel):
     dot_count: int
 
 
+class AppConfigRenderStyleFreeCamIcon(BaseModel):
+    color: tuple[int, int, int]
+    tri_size: int
+    circle_radius: int
+    line_width: int
+
+
 class AppConfigRenderStyleInspector(BaseModel):
     bg_color: tuple[int, int, int]
     border_color: tuple[int, int, int]
@@ -136,6 +143,7 @@ class AppConfigRenderStyles(BaseModel):
     pause_icon: AppConfigRenderStylePauseIcon
     target_icon: AppConfigRenderStyleTargetIcon
     com_icon: AppConfigRenderStyleComIcon
+    freecam_icon: AppConfigRenderStyleFreeCamIcon
     inspector: AppConfigRenderStyleInspector
     point_mass: AppConfigRenderStylePointMass
 

@@ -57,6 +57,11 @@ class CameraController:
     def reset_zoom_direction(self) -> None:
         self._zoom_direction = 0
 
+    def get_movement_directions(
+        self,
+    ) -> tuple[int, int, int]:
+        return (self._pan_direction_x, self._pan_direction_y, self._zoom_direction)
+
     def set_follow_mode_selected_mass(self) -> None:
         self._follow_mode = CameraFollowMode.SELECTED_POINT_MASS
 
