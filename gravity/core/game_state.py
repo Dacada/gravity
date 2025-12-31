@@ -1,8 +1,9 @@
-from gravity.physics import PointMassSimulator
-from gravity.ui import InspectorUIState, PauseController, CursorUIController
-from gravity.camera import Camera, CameraController
+from typing import Optional, Self
 
-from typing import Optional
+from gravity.camera import Camera, CameraController
+from gravity.config.schema import AppConfigSimulationControl
+from gravity.physics import PointMassSimulator
+from gravity.ui import CursorUIController, InspectorUIState, PauseController
 
 
 class GameState:
@@ -30,6 +31,28 @@ class GameState:
         self._running = True
         self._physics_loop_accumulator = 0.0
         self._resize: Optional[tuple[int, int]] = None
+
+    @classmethod
+    def from_config(
+        cls,
+        cfg: AppConfigSimulationControl,
+        points: PointMassSimulator,
+        inspector: InspectorUIState,
+        camera: Camera,
+        camera_controller: CameraController,
+        pause_controller: PauseController,
+        cursor_ui_controller: CursorUIController,
+    ) -> Self:
+        return cls(
+            points,
+            inspector,
+            camera,
+            camera_controller,
+            pause_controller,
+            cursor_ui_controller,
+            cfg.physics_timedelta,
+            cfg.physics_step_alloted_time_clamp,
+        )
 
     def stop(self) -> None:
         self._running = False

@@ -1,13 +1,11 @@
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
+from typing import Self
+
 import pygame
 
-
-class AnchorType(str, Enum):
-    TOP_LEFT = "TOP_LEFT"
-    TOP_RIGHT = "TOP_RIGHT"
-    BOTTOM_LEFT = "BOTTOM_LEFT"
-    BOTTOM_RIGHT = "BOTTOM_RIGHT"
+from gravity.config.schema import AppConfigLayout, AppConfigLayoutIcon
+from gravity.types import AnchorType
 
 
 @dataclass
@@ -15,6 +13,10 @@ class LayoutIcon:
     offset_ratio: tuple[float, float]
     size: tuple[int, int]
     anchor: AnchorType
+
+    @classmethod
+    def from_config(cls, cfg: AppConfigLayoutIcon) -> Self:
+        return cls(cfg.offset_ratio, cfg.size, cfg.anchor)
 
 
 class Layout:
@@ -32,6 +34,16 @@ class Layout:
         self._inspector_ratio = inspector_ratio
         self._pause_icon = pause_icon
         self._camera_state_icon = camera_state_icon
+
+    @classmethod
+    def from_config(cls, cfg: AppConfigLayout) -> Self:
+        return cls(
+            cfg.width,
+            cfg.height,
+            cfg.inspector_ratio,
+            LayoutIcon.from_config(cfg.pause_icon),
+            LayoutIcon.from_config(cfg.camera_state_icon),
+        )
 
     def resize(self, width: int, height: int) -> None:
         self._width = width

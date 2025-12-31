@@ -1,7 +1,7 @@
-from typing import Optional
-from gravity.physics import PointMass
-
 import logging
+from typing import Optional
+
+from gravity.physics import PointMass
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +20,11 @@ class InspectorUIControlState:
             return 0.0
         return getattr(p, self._attr_name, 0.0)
 
-    def set(self, v: float):
+    def set(self, v: float) -> None:
         p = self._inspector.get_selected_point()
         if p is None:
             return
-        return setattr(p, self._attr_name, v)
+        setattr(p, self._attr_name, v)
 
 
 class InspectorUIState:

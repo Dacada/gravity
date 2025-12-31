@@ -1,0 +1,157 @@
+from typing import Any, Self, Type
+
+from pydantic import BaseModel
+from pydantic.annotated_handlers import GetCoreSchemaHandler
+from pydantic_core import core_schema
+
+from gravity.types import AnchorType
+
+
+class RationalFloat(float):
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source: Type[Any], handler: GetCoreSchemaHandler
+    ) -> core_schema.CoreSchema:
+        return core_schema.no_info_before_validator_function(
+            cls._validate,
+            core_schema.float_schema(),
+        )
+
+    @classmethod
+    def _validate(cls, value: Any) -> Self:
+        if isinstance(value, (int, float)):
+            return cls(value)
+
+        if isinstance(value, dict):
+            if set(value.keys()) != {"ratio"}:
+                raise ValueError("Invalid rational object")
+            return cls._parse_ratio(value["ratio"])
+
+        raise ValueError("Invalid rational value")
+
+    @classmethod
+    def _parse_ratio(cls, value: Any) -> Self:
+        if isinstance(value, (int, float)):
+            return cls(value)
+
+        if not isinstance(value, str):
+            raise ValueError("Invalid ratio literal")
+
+        text = value.strip()
+
+        # Percentage
+        if text.endswith("%"):
+            return cls(float(text[:-1]) / 100.0)
+
+        # Fraction
+        if "/" in text:
+            num, den = text.split("/", 1)
+            return cls(float(num) / float(den))
+
+        raise ValueError(f"Invalid ratio format: {value!r}")
+
+
+class AppConfigCore(BaseModel):
+    target_framerate: int
+
+
+class AppConfigLayoutIcon(BaseModel):
+    offset_ratio: tuple[RationalFloat, RationalFloat]
+    size: tuple[int, int]
+    anchor: AnchorType
+
+
+class AppConfigLayout(BaseModel):
+    width: int
+    height: int
+    inspector_ratio: RationalFloat
+    pause_icon: AppConfigLayoutIcon
+    camera_state_icon: AppConfigLayoutIcon
+
+
+class AppConfigPhysicsSimulation(BaseModel):
+    gravitational_constant: float
+    softening_factor: float
+    merge_distance_squared: float
+
+
+class AppConfigCamera(BaseModel):
+    pan_speed: float
+    zoom_factor: float
+
+
+class AppConfigPauseAnimation(BaseModel):
+    speed: float
+
+
+class AppConfigCursorUi(BaseModel):
+    viewport_clickable_margin: int
+    selection_distance_squared: int
+
+
+class AppConfigSimulationControl(BaseModel):
+    physics_timedelta: RationalFloat
+    physics_step_alloted_time_clamp: RationalFloat
+
+
+class AppConfigRenderStylePauseIcon(BaseModel):
+    color: tuple[int, int, int]
+    bar_width: int
+    bar_height: int
+    gap: int
+
+
+class AppConfigRenderStyleTargetIcon(BaseModel):
+    color: tuple[int, int, int]
+    size: int
+    center_radius: int
+    corner_length: int
+    corner_thickness: int
+
+
+class AppConfigRenderStyleComIcon(BaseModel):
+    color: tuple[int, int, int]
+    center_radius: int
+    center_thickness: int
+    dot_radius: int
+    dot_distance: int
+    dot_count: int
+
+
+class AppConfigRenderStyleInspector(BaseModel):
+    bg_color: tuple[int, int, int]
+    border_color: tuple[int, int, int]
+    text_color: tuple[int, int, int]
+    padding: tuple[int, int]
+    control_separation: int
+
+
+class AppConfigRenderStylePointMass(BaseModel):
+    color: tuple[int, int, int]
+    selected_color: tuple[int, int, int]
+    radius: int
+
+
+class AppConfigRenderStyles(BaseModel):
+    pause_icon: AppConfigRenderStylePauseIcon
+    target_icon: AppConfigRenderStyleTargetIcon
+    com_icon: AppConfigRenderStyleComIcon
+    inspector: AppConfigRenderStyleInspector
+    point_mass: AppConfigRenderStylePointMass
+
+
+class AppConfigRender(BaseModel):
+    styles: AppConfigRenderStyles
+    font_name: str
+    font_size: int
+
+
+class AppConfig(BaseModel):
+    core: AppConfigCore
+    layout: AppConfigLayout
+    physics_simulation: AppConfigPhysicsSimulation
+    camera: AppConfigCamera
+    pause_animation: AppConfigPauseAnimation
+    cursor_ui: AppConfigCursorUi
+    simulation_control: AppConfigSimulationControl
+    render: AppConfigRender

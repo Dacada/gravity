@@ -1,4 +1,7 @@
 import math
+from typing import Self
+
+from gravity.config.schema import AppConfigPauseAnimation
 
 
 class PauseController:
@@ -8,6 +11,10 @@ class PauseController:
         self._paused = True
         self._paused_timer = 0.0
         self.icon_alpha = 255
+
+    @classmethod
+    def from_config(cls, cfg: AppConfigPauseAnimation) -> Self:
+        return cls(cfg.speed)
 
     def toggle_paused(self) -> None:
         self._paused = not self._paused

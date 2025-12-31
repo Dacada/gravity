@@ -1,9 +1,10 @@
-from typing import Iterable, Optional, Iterator
-
-from gravity.physics.point_mass import PointMass
+import math
+from typing import Iterable, Iterator, Optional, Self
 
 import pygame
-import math
+
+from gravity.config.schema import AppConfigPhysicsSimulation
+from gravity.physics.point_mass import PointMass
 
 
 class PointMassSimulator(Iterable[PointMass]):
@@ -19,6 +20,14 @@ class PointMassSimulator(Iterable[PointMass]):
 
         self._masses: list[PointMass] = []
 
+    @classmethod
+    def from_config(cls, cfg: AppConfigPhysicsSimulation) -> Self:
+        return cls(
+            cfg.gravitational_constant,
+            cfg.softening_factor,
+            cfg.merge_distance_squared,
+        )
+
     def create(self, pos: pygame.Vector2, mass: float = 1.0) -> PointMass:
         p = PointMass(
             pos,
@@ -28,7 +37,7 @@ class PointMassSimulator(Iterable[PointMass]):
         self._masses.append(p)
         return p
 
-    def delete(self, p: PointMass):
+    def delete(self, p: PointMass) -> None:
         for i, pp in enumerate(self._masses):
             if pp is p:
                 del self._masses[i]

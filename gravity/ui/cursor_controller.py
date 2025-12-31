@@ -1,8 +1,11 @@
-from gravity.ui.layout import Layout
-from typing import Iterable, Optional
-from gravity.physics import PointMass
-from gravity.camera import Camera
+from typing import Iterable, Optional, Self
+
 import pygame
+
+from gravity.camera import Camera
+from gravity.config.schema import AppConfigCursorUi
+from gravity.layout import Layout
+from gravity.physics import PointMass
 
 
 class CursorUIController:
@@ -16,7 +19,15 @@ class CursorUIController:
         self._viewport_clickable_margin = viewport_clickable_margin
         self._selection_distance_squared = selection_distance_squared
 
-    def is_viewport_click_allowed(self, pos: tuple[int, int]):
+    @classmethod
+    def from_config(cls, cfg: AppConfigCursorUi, layout: Layout) -> Self:
+        return cls(
+            layout,
+            cfg.viewport_clickable_margin,
+            cfg.selection_distance_squared,
+        )
+
+    def is_viewport_click_allowed(self, pos: tuple[int, int]) -> bool:
         rect = self._layout.viewport
         return (
             rect.collidepoint(pos)

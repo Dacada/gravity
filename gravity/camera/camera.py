@@ -1,6 +1,9 @@
+from typing import Self
+
 import pygame
 
-from gravity.ui.layout import Layout
+from gravity.config.schema import AppConfigCamera
+from gravity.layout import Layout
 
 
 class Camera:
@@ -11,6 +14,14 @@ class Camera:
 
         self._world_center = pygame.Vector2(0, 0)
         self._zoom = 1.0
+
+    @classmethod
+    def from_config(cls, cfg: AppConfigCamera, layout: Layout) -> Self:
+        return cls(
+            layout,
+            cfg.pan_speed,
+            cfg.zoom_factor,
+        )
 
     def world_to_screen(self, world_pos: pygame.Vector2) -> pygame.Vector2:
         return (
@@ -25,7 +36,7 @@ class Camera:
     def pan(self, direction: pygame.Vector2, dt: float) -> None:
         self._world_center += direction * dt * self._pan_speed
 
-    def set_world_center(self, world_center: pygame.Vector2):
+    def set_world_center(self, world_center: pygame.Vector2) -> None:
         self._world_center = world_center
 
     def zoom(self, direction: int, dt: float) -> None:

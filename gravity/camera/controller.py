@@ -3,8 +3,8 @@ from typing import Optional
 
 import pygame
 
-from gravity.physics import PointMass, PointMassSimulator
 from gravity.camera import Camera
+from gravity.physics import PointMass, PointMassSimulator
 
 
 class CameraFollowMode(Enum):
@@ -14,59 +14,59 @@ class CameraFollowMode(Enum):
 
 
 class CameraController:
-    def __init__(self):
+    def __init__(self) -> None:
         self._pan_direction_x = 0
         self._pan_direction_y = 0
         self._zoom_direction = 0
         self._follow_mode = CameraFollowMode.NONE
 
-    def set_pan_direction_left(self):
+    def set_pan_direction_left(self) -> None:
         self._pan_direction_x -= 1
 
-    def reset_pan_direction_left(self):
+    def reset_pan_direction_left(self) -> None:
         if self._pan_direction_x < 0:
             self._pan_direction_x = 0
 
-    def set_pan_direction_right(self):
+    def set_pan_direction_right(self) -> None:
         self._pan_direction_x += 1
 
-    def reset_pan_direction_right(self):
+    def reset_pan_direction_right(self) -> None:
         if self._pan_direction_x > 0:
             self._pan_direction_x = 0
 
-    def set_pan_direction_up(self):
+    def set_pan_direction_up(self) -> None:
         self._pan_direction_y -= 1
 
-    def reset_pan_direction_up(self):
+    def reset_pan_direction_up(self) -> None:
         if self._pan_direction_y < 0:
             self._pan_direction_y = 0
 
-    def set_pan_direction_down(self):
+    def set_pan_direction_down(self) -> None:
         self._pan_direction_y += 1
 
-    def reset_pan_direction_down(self):
+    def reset_pan_direction_down(self) -> None:
         if self._pan_direction_y > 0:
             self._pan_direction_y = 0
 
-    def set_zoom_direction_in(self):
+    def set_zoom_direction_in(self) -> None:
         self._zoom_direction = 1
 
-    def set_zoom_direction_out(self):
+    def set_zoom_direction_out(self) -> None:
         self._zoom_direction = -1
 
-    def reset_zoom_direction(self):
+    def reset_zoom_direction(self) -> None:
         self._zoom_direction = 0
 
-    def set_follow_mode_selected_mass(self):
+    def set_follow_mode_selected_mass(self) -> None:
         self._follow_mode = CameraFollowMode.SELECTED_POINT_MASS
 
-    def set_follow_mode_center_of_mass(self):
+    def set_follow_mode_center_of_mass(self) -> None:
         self._follow_mode = CameraFollowMode.CENTER_OF_MASS
 
-    def unset_follow_mode(self):
+    def unset_follow_mode(self) -> None:
         self._follow_mode = CameraFollowMode.NONE
 
-    def is_follow_mode_set(self):
+    def is_follow_mode_set(self) -> bool:
         return self._follow_mode != CameraFollowMode.NONE
 
     def is_follow_selected_mass_mode(self) -> bool:

@@ -1,9 +1,10 @@
-from gravity.core import GameState
-from gravity.ui.layout import Layout
-from gravity.physics import PointMass
+import logging
 
 import pygame
-import logging
+
+from gravity.core import GameState
+from gravity.layout import Layout
+from gravity.physics import PointMass
 
 logger = logging.getLogger(__name__)
 

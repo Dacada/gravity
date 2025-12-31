@@ -1,17 +1,20 @@
-from gravity.ui.layout import Layout
-from gravity.ui import InspectorUIState, PauseController
-from gravity.render.styles import RenderStyle, IconStyle
-from gravity.core import GameState
-from gravity.camera import Camera, CameraController
-from gravity.physics import PointMassSimulator, PointMass
+from typing import Optional, Self
 
 import pygame
 
-from typing import Optional
+from gravity.camera import Camera, CameraController
+from gravity.config.schema import AppConfigRender
+from gravity.core import GameState
+from gravity.layout import Layout
+from gravity.physics import PointMass, PointMassSimulator
+from gravity.render.styles import IconStyle, IconStyleRenderArgs, RenderStyle
+from gravity.ui import InspectorUIState, PauseController
 
 
 class Renderer:
-    def __init__(self, layout: Layout, style: RenderStyle, font_name: str, font_size: int) -> None:
+    def __init__(
+        self, layout: Layout, style: RenderStyle, font_name: str, font_size: int
+    ) -> None:
         self._layout = layout
         self._style = style
         self._font_name = font_name
@@ -20,7 +23,13 @@ class Renderer:
         self._screen = self._make_surface()
         self._font: Optional[pygame.font.Font] = None
 
-    def initialize(self):
+    @classmethod
+    def from_config(cls, cfg: AppConfigRender, layout: Layout) -> Self:
+        return cls(
+            layout, RenderStyle.from_config(cfg.styles), cfg.font_name, cfg.font_size
+        )
+
+    def initialize(self) -> None:
         self._font = pygame.font.SysFont(self._font_name, self._font_size)
 
     def render(self, game: GameState) -> None:
@@ -71,7 +80,7 @@ class Renderer:
 
     def _render_inspector(
         self, inspector: InspectorUIState, points: PointMassSimulator
-    ):
+    ) -> None:
         panel = self._layout.inspector
 
         pygame.draw.rect(
@@ -112,7 +121,7 @@ class Renderer:
             self._render_text(text, panel, offset_y)
             offset_y += self._style.inspector.control_separation
 
-    def _render_text(self, text: str, panel: pygame.Rect, y_offset: int):
+    def _render_text(self, text: str, panel: pygame.Rect, y_offset: int) -> None:
         x = panel.x + self._style.inspector.padding[0]
         y = panel.y + self._style.inspector.padding[1] + y_offset
         if self._font is None:
@@ -132,10 +141,10 @@ class Renderer:
             self._render_com_icon()
 
     def _render_icon(
-        self, layout_rect: pygame.Rect, style: IconStyle, args: tuple[int, ...]
+        self, layout_rect: pygame.Rect, style: IconStyle, kwargs: IconStyleRenderArgs
     ) -> None:
         surface = pygame.Surface(layout_rect.size, pygame.SRCALPHA)
-        style.render(surface, *args)
+        style.render(surface, **kwargs)
         icon_rect = surface.get_rect(center=layout_rect.center)
         self._screen.blit(surface, icon_rect)
 
@@ -143,19 +152,19 @@ class Renderer:
         self._render_icon(
             self._layout.pause_icon,
             self._style.pause_icon,
-            (alpha,),
+            {"alpha": alpha},
         )
 
     def _render_target_icon(self) -> None:
         self._render_icon(
             self._layout.camera_state_icon,
             self._style.target_icon,
-            (),
+            {},
         )
 
     def _render_com_icon(self) -> None:
         self._render_icon(
             self._layout.camera_state_icon,
             self._style.com_icon,
-            (),
+            {},
         )
