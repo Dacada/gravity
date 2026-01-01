@@ -2,11 +2,13 @@ from dataclasses import dataclass
 
 import pygame
 
+from gravity.types import Color
+
 
 @dataclass
 class PointMass:
     name: str
-    color: tuple[int, int, int]
+    color: Color
 
     pos: pygame.Vector2
     vel: pygame.Vector2

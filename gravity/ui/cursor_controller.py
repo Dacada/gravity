@@ -27,7 +27,7 @@ class CursorUIController:
             cfg.selection_distance_squared,
         )
 
-    def is_viewport_click_allowed(self, pos: tuple[int, int]) -> bool:
+    def is_viewport_click_allowed(self, pos: pygame.Vector2) -> bool:
         rect = self._layout.viewport
         return (
             rect.collidepoint(pos)
@@ -35,15 +35,14 @@ class CursorUIController:
         )
 
     def find_closest_point_screen_space(
-        self, points: Iterable[PointMass], camera: Camera, pos_cursor: tuple[int, int]
+        self, points: Iterable[PointMass], camera: Camera, pos_cursor: pygame.Vector2
     ) -> Optional[PointMass]:
-        pos = pygame.Vector2(*pos_cursor)
         best = None
         best_dist = self._selection_distance_squared
 
         for p in points:
             point = camera.world_to_screen(p.pos)
-            d = pos.distance_squared_to(point)
+            d = pos_cursor.distance_squared_to(point)
             if d < best_dist:
                 best = p
                 best_dist = d

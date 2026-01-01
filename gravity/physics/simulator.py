@@ -5,6 +5,7 @@ import pygame
 
 from gravity.config.schema import AppConfigPhysicsSimulation
 from gravity.physics.point_mass import PointMass
+from gravity.types import Color
 
 
 class PointMassSimulator(Iterable[PointMass]):
@@ -13,7 +14,7 @@ class PointMassSimulator(Iterable[PointMass]):
         gravitational_constant: float,
         softening_factor: float,
         merge_distance_squared: float,
-        default_point_mass_color: tuple[int, int, int],
+        default_point_mass_color: Color,
     ) -> None:
         self._gravitational_constant = gravitational_constant
         self._softening_factor = softening_factor
@@ -28,7 +29,7 @@ class PointMassSimulator(Iterable[PointMass]):
             cfg.gravitational_constant,
             cfg.softening_factor,
             cfg.merge_distance_squared,
-            cfg.default_point_mass_color,
+            Color(*cfg.default_point_mass_color),
         )
 
     def create(self, pos: pygame.Vector2, mass: float = 1.0) -> PointMass:
@@ -137,15 +138,9 @@ class PointMassSimulator(Iterable[PointMass]):
         else:
             name = ""
 
-        color = (
-            (pi.color[0] + pj.color[0]) // 2,
-            (pi.color[1] + pj.color[1]) // 2,
-            (pi.color[2] + pj.color[2]) // 2,
-        )
-
         p_new = PointMass(
             name=name,
-            color=color,
+            color=pi.color.merge(pj.color),
             pos=(pi.mass * pi.pos + pj.mass * pj.pos) / (pi.mass + pj.mass),
             vel=(pi.mass * pi.vel + pj.mass * pj.vel) / (pi.mass + pj.mass),
             mass=pi.mass + pj.mass,

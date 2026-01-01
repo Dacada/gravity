@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from enum import Enum
 from typing import Self
 
 import pygame
@@ -10,13 +9,15 @@ from gravity.types import AnchorType
 
 @dataclass
 class LayoutIcon:
-    offset_ratio: tuple[float, float]
-    size: tuple[int, int]
+    offset_ratio: pygame.Vector2
+    size: pygame.Vector2
     anchor: AnchorType
 
     @classmethod
     def from_config(cls, cfg: AppConfigLayoutIcon) -> Self:
-        return cls(cfg.offset_ratio, cfg.size, cfg.anchor)
+        return cls(
+            pygame.Vector2(cfg.offset_ratio), pygame.Vector2(cfg.size), cfg.anchor
+        )
 
 
 class Layout:
@@ -35,6 +36,14 @@ class Layout:
         self._pause_icon = pause_icon
         self._camera_state_icon = camera_state_icon
 
+        self.rect: pygame.Rect
+        self.viewport: pygame.Rect
+        self.inspector: pygame.Rect
+        self.pause_icon: pygame.Rect
+        self.camera_state_icon: pygame.Rect
+
+        self._recalculate()
+
     @classmethod
     def from_config(cls, cfg: AppConfigLayout) -> Self:
         return cls(
@@ -48,40 +57,19 @@ class Layout:
     def resize(self, width: int, height: int) -> None:
         self._width = width
         self._height = height
-
-    @property
-    def rect(self) -> pygame.Rect:
-        return pygame.Rect(0, 0, self._width, self._height)
+        self._recalculate()
 
     @property
     def _split_x(self) -> int:
         return int(self._width * (1.0 - self._inspector_ratio))
-
-    @property
-    def viewport(self) -> pygame.Rect:
-        return pygame.Rect(
-            0,
-            0,
-            self._split_x,
-            self._height,
-        )
-
-    @property
-    def inspector(self) -> pygame.Rect:
-        return pygame.Rect(
-            self._split_x,
-            0,
-            self._width - self._split_x,
-            self._height,
-        )
 
     def _icon(
         self,
         parent: pygame.Rect,
         icon: LayoutIcon,
     ) -> pygame.Rect:
-        x = parent.x + int(parent.w * icon.offset_ratio[0])
-        y = parent.y + int(parent.h * icon.offset_ratio[1])
+        x = parent.x + parent.w * icon.offset_ratio[0]
+        y = parent.y + parent.h * icon.offset_ratio[1]
 
         w, h = icon.size
 
@@ -97,16 +85,25 @@ class Layout:
 
         return pygame.Rect(x, y, w, h)
 
-    @property
-    def pause_icon(self) -> pygame.Rect:
-        return self._icon(
+    def _recalculate(self) -> None:
+        self.rect = pygame.Rect(0, 0, self._width, self._height)
+        self.viewport = pygame.Rect(
+            0,
+            0,
+            self._split_x,
+            self._height,
+        )
+        self.inspector = pygame.Rect(
+            self._split_x,
+            0,
+            self._width - self._split_x,
+            self._height,
+        )
+        self.pause_icon = self._icon(
             self.rect,
             self._pause_icon,
         )
-
-    @property
-    def camera_state_icon(self) -> pygame.Rect:
-        return self._icon(
+        self.camera_state_icon = self._icon(
             self.rect,
             self._camera_state_icon,
         )

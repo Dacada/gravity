@@ -15,6 +15,7 @@ from gravity.config.schema import (
     AppConfigRenderStyles,
     AppConfigRenderStyleTargetIcon,
 )
+from gravity.types import Color
 
 
 class IconStyleRenderArgs(TypedDict, total=False):
@@ -32,7 +33,7 @@ class IconStyle(ABC):
 
 @dataclass
 class PauseIconStyle(IconStyle):
-    color: tuple[int, int, int]
+    color: Color
     bar_width: int
     bar_height: int
     gap: int
@@ -40,7 +41,7 @@ class PauseIconStyle(IconStyle):
     @classmethod
     def from_config(cls, cfg: AppConfigRenderStylePauseIcon) -> Self:
         return cls(
-            cfg.color,
+            Color(*cfg.color),
             cfg.bar_width,
             cfg.bar_height,
             cfg.gap,
@@ -64,7 +65,7 @@ class PauseIconStyle(IconStyle):
 
 @dataclass
 class TargetIconStyle(IconStyle):
-    color: tuple[int, int, int]
+    color: Color
     size: int
     center_radius: int
     corner_length: int
@@ -73,7 +74,7 @@ class TargetIconStyle(IconStyle):
     @classmethod
     def from_config(cls, cfg: AppConfigRenderStyleTargetIcon) -> Self:
         return cls(
-            cfg.color,
+            Color(*cfg.color),
             cfg.size,
             cfg.center_radius,
             cfg.corner_length,
@@ -121,7 +122,7 @@ class TargetIconStyle(IconStyle):
 
 @dataclass
 class CenterOfMassRingIconStyle(IconStyle):
-    color: tuple[int, int, int]
+    color: Color
     center_radius: int
     center_thickness: int
     dot_radius: int
@@ -131,7 +132,7 @@ class CenterOfMassRingIconStyle(IconStyle):
     @classmethod
     def from_config(cls, cfg: AppConfigRenderStyleComIcon) -> Self:
         return cls(
-            cfg.color,
+            Color(*cfg.color),
             cfg.center_radius,
             cfg.center_thickness,
             cfg.dot_radius,
@@ -162,7 +163,7 @@ class CenterOfMassRingIconStyle(IconStyle):
 
 @dataclass
 class FreeCamIconStyle(IconStyle):
-    color: tuple[int, int, int]
+    color: Color
     tri_size: int
     circle_radius: int
     line_width: int
@@ -170,7 +171,7 @@ class FreeCamIconStyle(IconStyle):
     @classmethod
     def from_config(cls, cfg: AppConfigRenderStyleFreeCamIcon) -> Self:
         return cls(
-            cfg.color,
+            Color(*cfg.color),
             cfg.tri_size,
             cfg.circle_radius,
             cfg.line_width,
@@ -235,19 +236,19 @@ class FreeCamIconStyle(IconStyle):
 
 @dataclass
 class InspectorStyle:
-    bg_color: tuple[int, int, int]
-    border_color: tuple[int, int, int]
-    text_color: tuple[int, int, int]
-    padding: tuple[int, int]
+    bg_color: Color
+    border_color: Color
+    text_color: Color
+    padding: pygame.Vector2
     control_separation: int
 
     @classmethod
     def from_config(cls, cfg: AppConfigRenderStyleInspector) -> Self:
         return cls(
-            cfg.bg_color,
-            cfg.border_color,
-            cfg.text_color,
-            cfg.padding,
+            Color(*cfg.bg_color),
+            Color(*cfg.border_color),
+            Color(*cfg.text_color),
+            pygame.Vector2(cfg.padding),
             cfg.control_separation,
         )
 
@@ -257,7 +258,7 @@ class PointMassStyle:
     radius: int
     reticle_padding: int
     reticle_width: int
-    reticle_color: tuple[int, int, int]
+    reticle_color: Color
 
     @classmethod
     def from_config(cls, cfg: AppConfigRenderStylePointMass) -> Self:
@@ -265,7 +266,7 @@ class PointMassStyle:
             cfg.radius,
             cfg.reticle_padding,
             cfg.reticle_width,
-            cfg.reticle_color,
+            Color(*cfg.reticle_color),
         )
 
 

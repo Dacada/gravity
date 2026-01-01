@@ -1,5 +1,7 @@
 from typing import Optional, Self
 
+import pygame
+
 from gravity.camera import Camera, CameraController
 from gravity.config.schema import AppConfigSimulationControl
 from gravity.physics import PointMassSimulator
@@ -30,7 +32,7 @@ class GameState:
 
         self._running = True
         self._physics_loop_accumulator = 0.0
-        self._resize: Optional[tuple[int, int]] = None
+        self._resize: Optional[pygame.Vector2] = None
 
     @classmethod
     def from_config(
@@ -61,9 +63,9 @@ class GameState:
         return self._running
 
     def resize(self, width: int, height: int) -> None:
-        self._resize = (width, height)
+        self._resize = pygame.Vector2(width, height)
 
-    def query_resize(self) -> Optional[tuple[int, int]]:
+    def query_resize(self) -> Optional[pygame.Vector2]:
         ret = self._resize
         self._resize = None
         return ret

@@ -8,6 +8,7 @@ from gravity.core import GameState
 from gravity.layout import Layout
 from gravity.physics import PointMass, PointMassSimulator
 from gravity.render.styles import IconStyle, IconStyleRenderArgs, RenderStyle
+from gravity.types import Color
 from gravity.ui import InspectorUIState, PauseController
 
 
@@ -114,7 +115,7 @@ class Renderer:
         )
 
     def _draw_point_mass_label(
-        self, name: str, color: tuple[int, int, int], start: pygame.Vector2
+        self, name: str, color: Color, start: pygame.Vector2
     ) -> None:
         diag_len = self._style.name.diagonal_length
         horiz_len = self._style.name.horizontal_length

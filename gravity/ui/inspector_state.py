@@ -3,6 +3,7 @@ from typing import Any, Callable, Optional, Protocol, Self
 
 from gravity.config.schema import AppConfigUiFormat
 from gravity.physics import PointMass
+from gravity.types import Color
 
 logger = logging.getLogger(__name__)
 
@@ -59,21 +60,6 @@ def _make_formatter(format_spec: str) -> Callable[[Any], str]:
     return formatter
 
 
-def color(text: str) -> tuple[int, int, int]:
-    if len(text) != 6:
-        raise ValueError("color spec is not 6 characters")
-
-    return (
-        int(text[0:2], 16),
-        int(text[2:4], 16),
-        int(text[4:6], 16),
-    )
-
-
-def color_formatter(c: tuple[int, int, int]) -> str:
-    return "".join(format(x, "02x") for x in c)
-
-
 class InspectorUIState:
     def __init__(
         self,
@@ -83,7 +69,7 @@ class InspectorUIState:
     ) -> None:
         self.controls: list[UIControl] = [
             InspectorUIControlState("Name", "name", str, lambda s: s),
-            InspectorUIControlState("Color", "color", color, color_formatter),
+            InspectorUIControlState("Color", "color", Color.from_str, Color.as_str),
             InspectorUIControlState("X Pos", "x", float, position_value_formatter),
             InspectorUIControlState("Y Pos", "y", float, position_value_formatter),
             InspectorUIControlState("X Vel", "vx", float, velocity_value_formatter),
