@@ -21,7 +21,13 @@ class Renderer:
         self._font_size = font_size
 
         self._screen = self._make_surface()
-        self._font: Optional[pygame.font.Font] = None
+        self._font_optional: Optional[pygame.font.Font] = None
+
+    @property
+    def _font(self) -> pygame.font.Font:
+        if self._font_optional is None:
+            raise RuntimeError("must call initialize() first")
+        return self._font_optional
 
     @classmethod
     def from_config(cls, cfg: AppConfigRender, layout: Layout) -> Self:
@@ -30,7 +36,7 @@ class Renderer:
         )
 
     def initialize(self) -> None:
-        self._font = pygame.font.SysFont(self._font_name, self._font_size)
+        self._font_optional = pygame.font.SysFont(self._font_name, self._font_size)
 
     def render(self, game: GameState) -> None:
         self._maybe_resize(game)
@@ -64,19 +70,42 @@ class Renderer:
         points: PointMassSimulator,
         selected_point: Optional[PointMass],
     ) -> None:
+        diag_len = 20
+        horiz_len = 40
+
         for p in points:
             color = self._style.point_mass.color
             if selected_point is p:
                 color = self._style.point_mass.selected_color
 
-            screen_space_pos = camera.world_to_screen(p.pos)
+            screen_pos = camera.world_to_screen(p.pos)
+            start = pygame.Vector2(screen_pos.x, screen_pos.y)
 
+            # Label geometry
+            diag_end = start + pygame.Vector2(diag_len, -diag_len)
+            horiz_end = diag_end + pygame.Vector2(-horiz_len, 0)
+
+            # Draw point
             pygame.draw.circle(
                 self._screen,
                 color,
-                (screen_space_pos.x, screen_space_pos.y),
+                start,
                 self._style.point_mass.radius,
             )
+
+            # Draw label
+            if not p.name:
+                continue
+
+            pygame.draw.line(self._screen, color, start, diag_end, 1)
+            pygame.draw.line(self._screen, color, diag_end, horiz_end, 1)
+
+            text_surface = self._font.render(p.name, True, color)
+            text_rect = text_surface.get_rect()
+
+            # Right-justify text at the end of the horizontal line
+            text_rect.midright = int(horiz_end.x), int(horiz_end.y)
+            self._screen.blit(text_surface, text_rect)
 
     def _render_inspector(
         self, inspector: InspectorUIState, points: PointMassSimulator
@@ -125,8 +154,6 @@ class Renderer:
     def _render_text(self, text: str, panel: pygame.Rect, y_offset: int) -> None:
         x = panel.x + self._style.inspector.padding[0]
         y = panel.y + self._style.inspector.padding[1] + y_offset
-        if self._font is None:
-            raise RuntimeError("Renderer not initialized")
         text_surface = self._font.render(text, True, self._style.inspector.text_color)
         text_rect = text_surface.get_rect(topleft=(x, y))
         self._screen.blit(text_surface, text_rect)
