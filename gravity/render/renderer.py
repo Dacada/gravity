@@ -76,36 +76,36 @@ class Renderer:
     def _render_point_mass(
         self, camera: Camera, p: PointMass, is_selected: bool
     ) -> None:
-        diag_len = self._style.name.diagonal_length
-        horiz_len = self._style.name.horizontal_length
 
         color = self._style.point_mass.color
         if is_selected:
             color = self._style.point_mass.selected_color
 
         screen_pos = camera.world_to_screen(p.pos)
-        start = pygame.Vector2(screen_pos.x, screen_pos.y)
-
-        # Label geometry
-        diag_end = start + pygame.Vector2(diag_len, -diag_len)
-        horiz_end = diag_end + pygame.Vector2(-horiz_len, 0)
 
         # Draw point
         pygame.draw.circle(
             self._screen,
             color,
-            start,
+            screen_pos,
             self._style.point_mass.radius,
         )
 
         # Draw label
-        if not p.name:
-            return
+        if p.name:
+            self._draw_point_mass_label(p.name, color, screen_pos)
+
+    def _draw_point_mass_label(self, name: str, color: tuple[int, int, int], start: pygame.Vector2):
+        diag_len = self._style.name.diagonal_length
+        horiz_len = self._style.name.horizontal_length
+
+        diag_end = start + pygame.Vector2(diag_len, -diag_len)
+        horiz_end = diag_end + pygame.Vector2(-horiz_len, 0)
 
         pygame.draw.line(self._screen, color, start, diag_end, 1)
         pygame.draw.line(self._screen, color, diag_end, horiz_end, 1)
 
-        text_surface = self._font.render(p.name, True, color)
+        text_surface = self._font.render(name, True, color)
         text_rect = text_surface.get_rect()
 
         # Right-justify text at the end of the horizontal line
