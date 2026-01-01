@@ -255,15 +255,19 @@ class InspectorStyle:
 @dataclass
 class PointMassStyle:
     color: tuple[int, int, int]
-    selected_color: tuple[int, int, int]
     radius: int
+    reticle_padding: int
+    reticle_width: int
+    reticle_color: tuple[int, int, int]
 
     @classmethod
     def from_config(cls, cfg: AppConfigRenderStylePointMass) -> Self:
         return cls(
             cfg.color,
-            cfg.selected_color,
             cfg.radius,
+            cfg.reticle_padding,
+            cfg.reticle_width,
+            cfg.reticle_color,
         )
 
 

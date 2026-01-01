@@ -78,9 +78,6 @@ class Renderer:
     ) -> None:
 
         color = self._style.point_mass.color
-        if is_selected:
-            color = self._style.point_mass.selected_color
-
         screen_pos = camera.world_to_screen(p.pos)
 
         # Draw point
@@ -91,11 +88,35 @@ class Renderer:
             self._style.point_mass.radius,
         )
 
+        # Draw selection reticle
+        if is_selected:
+            self._draw_point_mass_reticle(screen_pos)
+
         # Draw label
         if p.name:
             self._draw_point_mass_label(p.name, color, screen_pos)
 
-    def _draw_point_mass_label(self, name: str, color: tuple[int, int, int], start: pygame.Vector2):
+    def _draw_point_mass_reticle(self, screen_pos: pygame.Vector2) -> None:
+        radius = self._style.point_mass.radius
+        padding = self._style.point_mass.reticle_padding
+        line_width = self._style.point_mass.reticle_width
+        color = self._style.point_mass.reticle_color
+
+        size = (radius + padding) * 2
+
+        rect = pygame.Rect(0, 0, size, size)
+        rect.center = (int(screen_pos.x), int(screen_pos.y))
+
+        pygame.draw.rect(
+            self._screen,
+            color,
+            rect,
+            width=line_width,
+        )
+
+    def _draw_point_mass_label(
+        self, name: str, color: tuple[int, int, int], start: pygame.Vector2
+    ) -> None:
         diag_len = self._style.name.diagonal_length
         horiz_len = self._style.name.horizontal_length
 
