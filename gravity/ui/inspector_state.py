@@ -45,8 +45,8 @@ class InspectorUIControlState[T]:
     def _parse(self, v: str) -> Optional[T]:
         try:
             val = self._parser(v)
-        except ValueError:
-            logger.info(f"failed to parse '{v}' as {self._parser.__name__}")
+        except ValueError as e:
+            logger.info(f"failed to parse '{v}' as {self._parser.__name__}: {e}")
             return None
         else:
             return val
@@ -59,6 +59,21 @@ def _make_formatter(format_spec: str) -> Callable[[Any], str]:
     return formatter
 
 
+def color(text: str) -> tuple[int, int, int]:
+    if len(text) != 6:
+        raise ValueError("color spec is not 6 characters")
+
+    return (
+        int(text[0:2], 16),
+        int(text[2:4], 16),
+        int(text[4:6], 16),
+    )
+
+
+def color_formatter(c: tuple[int, int, int]) -> str:
+    return "".join(format(x, "02x") for x in c)
+
+
 class InspectorUIState:
     def __init__(
         self,
@@ -68,6 +83,7 @@ class InspectorUIState:
     ) -> None:
         self.controls: list[UIControl] = [
             InspectorUIControlState("Name", "name", str, lambda s: s),
+            InspectorUIControlState("Color", "color", color, color_formatter),
             InspectorUIControlState("X Pos", "x", float, position_value_formatter),
             InspectorUIControlState("Y Pos", "y", float, position_value_formatter),
             InspectorUIControlState("X Vel", "vx", float, velocity_value_formatter),

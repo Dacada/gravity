@@ -140,7 +140,7 @@ class AppConfigRenderStyleInspector(BaseModel):
 
 
 class AppConfigRenderStylePointMass(BaseModel):
-    color: tuple[int, int, int]
+    default_color: tuple[int, int, int]
     radius: int
     reticle_padding: int
     reticle_width: int

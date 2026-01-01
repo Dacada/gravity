@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 import pygame
 
@@ -6,6 +7,8 @@ import pygame
 @dataclass
 class PointMass:
     name: str
+    color: Optional[tuple[int, int, int]]
+
     pos: pygame.Vector2
     vel: pygame.Vector2
     mass: float

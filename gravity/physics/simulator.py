@@ -31,6 +31,7 @@ class PointMassSimulator(Iterable[PointMass]):
     def create(self, pos: pygame.Vector2, mass: float = 1.0) -> PointMass:
         p = PointMass(
             name="",
+            color=None,
             pos=pos,
             vel=pygame.Vector2(0.0, 0.0),
             mass=mass,
@@ -133,8 +134,22 @@ class PointMassSimulator(Iterable[PointMass]):
         else:
             name = ""
 
+        if pi.color is not None and pj.color is not None:
+            color = (
+                (pi.color[0] + pj.color[0]) // 2,
+                (pi.color[1] + pj.color[1]) // 2,
+                (pi.color[2] + pj.color[2]) // 2,
+            )
+        elif pi.color is not None:
+            color = pi.color
+        elif pj.color is not None:
+            color = pj.color
+        else:
+            color = None
+
         p_new = PointMass(
             name=name,
+            color=color,
             pos=(pi.mass * pi.pos + pj.mass * pj.pos) / (pi.mass + pj.mass),
             vel=(pi.mass * pi.vel + pj.mass * pj.vel) / (pi.mass + pj.mass),
             mass=pi.mass + pj.mass,

@@ -77,8 +77,11 @@ class Renderer:
         self, camera: Camera, p: PointMass, is_selected: bool
     ) -> None:
 
-        color = self._style.point_mass.color
         screen_pos = camera.world_to_screen(p.pos)
+        if p.color is None:
+            color = self._style.point_mass.default_color
+        else:
+            color = p.color
 
         # Draw point
         pygame.draw.circle(

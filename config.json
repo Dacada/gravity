@@ -79,7 +79,7 @@
                 "control_separation": 15
             },
             "point_mass": {
-                "color": [255, 255, 255],
+                "default_color": [255, 255, 255],
                 "radius": 4,
                 "reticle_padding": 3,
                 "reticle_width": 2,
