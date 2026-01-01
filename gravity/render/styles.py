@@ -9,6 +9,7 @@ from gravity.config.schema import (
     AppConfigRenderStyleComIcon,
     AppConfigRenderStyleFreeCamIcon,
     AppConfigRenderStyleInspector,
+    AppConfigRenderStyleName,
     AppConfigRenderStylePauseIcon,
     AppConfigRenderStylePointMass,
     AppConfigRenderStyles,
@@ -267,6 +268,19 @@ class PointMassStyle:
 
 
 @dataclass
+class NameStyle:
+    diagonal_length: int
+    horizontal_length: int
+
+    @classmethod
+    def from_config(cls, cfg: AppConfigRenderStyleName) -> Self:
+        return cls(
+            cfg.diagonal_length,
+            cfg.horizontal_length,
+        )
+
+
+@dataclass
 class RenderStyle:
     pause_icon: IconStyle
     target_icon: IconStyle
@@ -274,6 +288,7 @@ class RenderStyle:
     freecam_icon: IconStyle
     inspector: InspectorStyle
     point_mass: PointMassStyle
+    name: NameStyle
 
     @classmethod
     def from_config(cls, cfg: AppConfigRenderStyles) -> Self:
@@ -284,4 +299,5 @@ class RenderStyle:
             FreeCamIconStyle.from_config(cfg.freecam_icon),
             InspectorStyle.from_config(cfg.inspector),
             PointMassStyle.from_config(cfg.point_mass),
+            NameStyle.from_config(cfg.name),
         )

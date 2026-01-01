@@ -145,6 +145,11 @@ class AppConfigRenderStylePointMass(BaseModel):
     radius: int
 
 
+class AppConfigRenderStyleName(BaseModel):
+    diagonal_length: int
+    horizontal_length: int
+
+
 class AppConfigRenderStyles(BaseModel):
     pause_icon: AppConfigRenderStylePauseIcon
     target_icon: AppConfigRenderStyleTargetIcon
@@ -152,6 +157,7 @@ class AppConfigRenderStyles(BaseModel):
     freecam_icon: AppConfigRenderStyleFreeCamIcon
     inspector: AppConfigRenderStyleInspector
     point_mass: AppConfigRenderStylePointMass
+    name: AppConfigRenderStyleName
 
 
 class AppConfigRender(BaseModel):

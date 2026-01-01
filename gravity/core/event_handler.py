@@ -128,6 +128,8 @@ class EventHandler:
                 self._game.camera_controller.set_follow_mode_center_of_mass()
             return True
 
+        return False
+
     def _handle_camera_keyup(self, event: pygame.event.Event) -> None:
         if event.key == pygame.K_LEFT:
             self._game.camera_controller.reset_pan_direction_left()
