@@ -20,7 +20,8 @@
     "physics_simulation": {
         "gravitational_constant": 500.0,
         "softening_factor": 1.0,
-        "merge_distance_squared": 0.75
+        "merge_distance_squared": 0.75,
+        "default_point_mass_color": [255, 255, 255]
     },
     "ui_format": {
         "position_format": ".3f",
@@ -79,7 +80,6 @@
                 "control_separation": 15
             },
             "point_mass": {
-                "default_color": [255, 255, 255],
                 "radius": 4,
                 "reticle_padding": 3,
                 "reticle_width": 2,

@@ -78,15 +78,11 @@ class Renderer:
     ) -> None:
 
         screen_pos = camera.world_to_screen(p.pos)
-        if p.color is None:
-            color = self._style.point_mass.default_color
-        else:
-            color = p.color
 
         # Draw point
         pygame.draw.circle(
             self._screen,
-            color,
+            p.color,
             screen_pos,
             self._style.point_mass.radius,
         )
@@ -97,7 +93,7 @@ class Renderer:
 
         # Draw label
         if p.name:
-            self._draw_point_mass_label(p.name, color, screen_pos)
+            self._draw_point_mass_label(p.name, p.color, screen_pos)
 
     def _draw_point_mass_reticle(self, screen_pos: pygame.Vector2) -> None:
         radius = self._style.point_mass.radius

@@ -13,10 +13,12 @@ class PointMassSimulator(Iterable[PointMass]):
         gravitational_constant: float,
         softening_factor: float,
         merge_distance_squared: float,
+        default_point_mass_color: tuple[int, int, int],
     ) -> None:
         self._gravitational_constant = gravitational_constant
         self._softening_factor = softening_factor
         self._merge_distance_squared = merge_distance_squared
+        self._default_point_mass_color = default_point_mass_color
 
         self._masses: list[PointMass] = []
 
@@ -26,12 +28,13 @@ class PointMassSimulator(Iterable[PointMass]):
             cfg.gravitational_constant,
             cfg.softening_factor,
             cfg.merge_distance_squared,
+            cfg.default_point_mass_color,
         )
 
     def create(self, pos: pygame.Vector2, mass: float = 1.0) -> PointMass:
         p = PointMass(
             name="",
-            color=None,
+            color=self._default_point_mass_color,
             pos=pos,
             vel=pygame.Vector2(0.0, 0.0),
             mass=mass,
@@ -134,18 +137,11 @@ class PointMassSimulator(Iterable[PointMass]):
         else:
             name = ""
 
-        if pi.color is not None and pj.color is not None:
-            color = (
-                (pi.color[0] + pj.color[0]) // 2,
-                (pi.color[1] + pj.color[1]) // 2,
-                (pi.color[2] + pj.color[2]) // 2,
-            )
-        elif pi.color is not None:
-            color = pi.color
-        elif pj.color is not None:
-            color = pj.color
-        else:
-            color = None
+        color = (
+            (pi.color[0] + pj.color[0]) // 2,
+            (pi.color[1] + pj.color[1]) // 2,
+            (pi.color[2] + pj.color[2]) // 2,
+        )
 
         p_new = PointMass(
             name=name,

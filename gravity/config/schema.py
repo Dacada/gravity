@@ -73,6 +73,7 @@ class AppConfigPhysicsSimulation(BaseModel):
     gravitational_constant: float
     softening_factor: float
     merge_distance_squared: float
+    default_point_mass_color: tuple[int, int, int]
 
 
 class AppConfigUiFormat(BaseModel):
@@ -140,7 +141,6 @@ class AppConfigRenderStyleInspector(BaseModel):
 
 
 class AppConfigRenderStylePointMass(BaseModel):
-    default_color: tuple[int, int, int]
     radius: int
     reticle_padding: int
     reticle_width: int
