@@ -124,8 +124,17 @@ class PointMassSimulator(Iterable[PointMass]):
         pi = self._masses[i]
         pj = self._masses[j]
 
+        if pi.name and pj.name:
+            name = pi.name + " / " + pj.name
+        elif pi.name:
+            name = pi.name
+        elif pj.name:
+            name = pj.name
+        else:
+            name = ""
+
         p_new = PointMass(
-            name="",
+            name=name,
             pos=(pi.mass * pi.pos + pj.mass * pj.pos) / (pi.mass + pj.mass),
             vel=(pi.mass * pi.vel + pj.mass * pj.vel) / (pi.mass + pj.mass),
             mass=pi.mass + pj.mass,
