@@ -75,6 +75,12 @@ class AppConfigPhysicsSimulation(BaseModel):
     merge_distance_squared: float
 
 
+class AppConfigUiFormat(BaseModel):
+    position_format: str
+    velocity_format: str
+    mass_format: str
+
+
 class AppConfigCamera(BaseModel):
     pan_speed: float
     zoom_factor: float
@@ -158,6 +164,7 @@ class AppConfig(BaseModel):
     core: AppConfigCore
     layout: AppConfigLayout
     physics_simulation: AppConfigPhysicsSimulation
+    ui_format: AppConfigUiFormat
     camera: AppConfigCamera
     pause_animation: AppConfigPauseAnimation
     cursor_ui: AppConfigCursorUi

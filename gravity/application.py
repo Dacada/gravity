@@ -71,7 +71,7 @@ def build_application(config: AppConfig) -> Application:
     target_framerate = config.core.target_framerate
     layout = Layout.from_config(config.layout)
     points = PointMassSimulator.from_config(config.physics_simulation)
-    inspector = InspectorUIState()
+    inspector = InspectorUIState.from_config(config.ui_format)
     camera = Camera.from_config(config.camera, layout)
     camera_controller = CameraController()
     pause_controller = PauseController.from_config(config.pause_animation)

@@ -30,9 +30,10 @@ class PointMassSimulator(Iterable[PointMass]):
 
     def create(self, pos: pygame.Vector2, mass: float = 1.0) -> PointMass:
         p = PointMass(
-            pos,
-            pygame.Vector2(0.0, 0.0),
-            mass,
+            name="",
+            pos=pos,
+            vel=pygame.Vector2(0.0, 0.0),
+            mass=mass,
         )
         self._masses.append(p)
         return p
@@ -124,9 +125,10 @@ class PointMassSimulator(Iterable[PointMass]):
         pj = self._masses[j]
 
         p_new = PointMass(
-            (pi.mass * pi.pos + pj.mass * pj.pos) / (pi.mass + pj.mass),
-            (pi.mass * pi.vel + pj.mass * pj.vel) / (pi.mass + pj.mass),
-            pi.mass + pj.mass,
+            name="",
+            pos=(pi.mass * pi.pos + pj.mass * pj.pos) / (pi.mass + pj.mass),
+            vel=(pi.mass * pi.vel + pj.mass * pj.vel) / (pi.mass + pj.mass),
+            mass=pi.mass + pj.mass,
         )
 
         self._masses[i] = p_new

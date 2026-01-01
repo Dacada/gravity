@@ -113,7 +113,8 @@ class Renderer:
         offset_y += self._style.inspector.control_separation * 2
 
         for i, control in enumerate(inspector.controls):
-            text = f"{control.label}: {control.get():.3f}"
+            value = control.get_and_format(selected_point)
+            text = f"{control.label}: {value}"
             if i == inspector.get_current_idx():
                 text += " ◀ "
                 text += inspector.get_typing_input()

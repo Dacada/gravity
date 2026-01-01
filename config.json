@@ -22,6 +22,11 @@
         "softening_factor": 1.0,
         "merge_distance_squared": 0.75
     },
+    "ui_format": {
+        "position_format": ".3f",
+        "velocity_format": ".3f",
+        "mass_format": ".3f"
+    },
     "camera": {
         "pan_speed": 100.0,
         "zoom_factor": 1.5

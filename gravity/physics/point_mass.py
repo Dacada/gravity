@@ -5,6 +5,7 @@ import pygame
 
 @dataclass
 class PointMass:
+    name: str
     pos: pygame.Vector2
     vel: pygame.Vector2
     mass: float

@@ -1,44 +1,90 @@
 import logging
-from typing import Optional
+from typing import Any, Callable, Optional, Protocol, Self
 
+from gravity.config.schema import AppConfigUiFormat
 from gravity.physics import PointMass
 
 logger = logging.getLogger(__name__)
 
 
-class InspectorUIControlState:
+class UIControl(Protocol):
+    label: str
+
+    def get_and_format(self, p: Optional[PointMass]) -> Optional[str]: ...
+    def parse_and_set(self, v: str, p: Optional[PointMass]) -> bool: ...
+
+
+class InspectorUIControlState[T]:
     def __init__(
-        self, inspector: "InspectorUIState", label: str, attr_name: str
+        self,
+        label: str,
+        attr_name: str,
+        parser: Callable[[str], T],
+        formatter: Callable[[T], str],
     ) -> None:
         self.label = label
-        self._inspector = inspector
         self._attr_name = attr_name
+        self._parser = parser
+        self._formatter = formatter
 
-    def get(self) -> float:
-        p = self._inspector.get_selected_point()
+    def get_and_format(self, p: Optional[PointMass]) -> Optional[str]:
         if p is None:
-            return 0.0
-        return getattr(p, self._attr_name, 0.0)
+            return None
+        val = getattr(p, self._attr_name, None)
+        if val is None:
+            return None
+        return self._formatter(val)
 
-    def set(self, v: float) -> None:
-        p = self._inspector.get_selected_point()
-        if p is None:
-            return
-        setattr(p, self._attr_name, v)
+    def parse_and_set(self, v: str, p: Optional[PointMass]) -> bool:
+        val = self._parse(v)
+        if p is None or val is None:
+            return False
+        setattr(p, self._attr_name, val)
+        return True
+
+    def _parse(self, v: str) -> Optional[T]:
+        try:
+            val = self._parser(v)
+        except ValueError:
+            logger.info(f"failed to parse '{v}' as {self._parser.__name__}")
+            return None
+        else:
+            return val
+
+
+def _make_formatter(format_spec: str) -> Callable[[Any], str]:
+    def formatter(value: Any) -> str:
+        return format(value, format_spec)
+
+    return formatter
 
 
 class InspectorUIState:
-    def __init__(self) -> None:
-        self.controls = [
-            InspectorUIControlState(self, "X Pos", "x"),
-            InspectorUIControlState(self, "Y Pos", "y"),
-            InspectorUIControlState(self, "X Vel", "vx"),
-            InspectorUIControlState(self, "Y Vel", "vy"),
-            InspectorUIControlState(self, "Mass", "mass"),
+    def __init__(
+        self,
+        position_value_formatter: Callable[[float], str],
+        velocity_value_formatter: Callable[[float], str],
+        mass_value_formatter: Callable[[float], str],
+    ) -> None:
+        self.controls: list[UIControl] = [
+            InspectorUIControlState("Name", "name", str, lambda s: s),
+            InspectorUIControlState("X Pos", "x", float, position_value_formatter),
+            InspectorUIControlState("Y Pos", "y", float, position_value_formatter),
+            InspectorUIControlState("X Vel", "vx", float, velocity_value_formatter),
+            InspectorUIControlState("Y Vel", "vy", float, velocity_value_formatter),
+            InspectorUIControlState("Mass", "mass", float, mass_value_formatter),
         ]
         self._selected_point_mass: Optional[PointMass] = None
         self._current_idx = 0
         self._typing = ""
+
+    @classmethod
+    def from_config(cls, cfg: AppConfigUiFormat) -> Self:
+        return cls(
+            _make_formatter(cfg.position_format),
+            _make_formatter(cfg.velocity_format),
+            _make_formatter(cfg.mass_format),
+        )
 
     def reset(self) -> None:
         self._selected_point_mass = None
@@ -76,11 +122,7 @@ class InspectorUIState:
         return self._typing
 
     def try_commit(self) -> None:
-        try:
-            val = float(self._typing)
-        except ValueError:
-            logger.info(f"failed to parse '{self._typing}' as float")
-            return
-
-        self.controls[self._current_idx].set(val)
-        self._typing = ""
+        control = self.controls[self._current_idx]
+        success = control.parse_and_set(self._typing, self.get_selected_point())
+        if success:
+            self._typing = ""
