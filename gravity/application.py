@@ -6,7 +6,11 @@ from gravity.camera import Camera, CameraController
 from gravity.config import AppConfig
 from gravity.core import EventHandler, GameState
 from gravity.layout import Layout
-from gravity.physics import SimulationController
+from gravity.physics import (
+    SimulationController,
+    SimulationCore,
+    SimulationEntityDescriptor,
+)
 from gravity.render import Renderer
 from gravity.ui import CursorUIController, InspectorUIState, PauseController
 
@@ -70,7 +74,16 @@ class Application:
 def build_application(config: AppConfig) -> Application:
     layout = Layout.from_config(config.layout)
 
-    simulation = SimulationController.from_config(config.simulation)
+    simulation_core = SimulationCore.from_config(config.simulation.physics)
+    simulation_entity_descriptor = SimulationEntityDescriptor.from_config(
+        config.simulation.model
+    )
+    simulation = SimulationController.from_config(
+        config.simulation.control,
+        simulation_core,
+        simulation_entity_descriptor,
+    )
+
     inspector = InspectorUIState.from_config(config.ui_format)
     camera = Camera.from_config(config.camera, layout)
 

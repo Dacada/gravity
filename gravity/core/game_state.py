@@ -48,7 +48,7 @@ class GameState:
         self.pause_controller.update(dt)
 
         if not self.pause_controller.is_paused():
-            self.simulation.update()
+            self.simulation.update(dt)
 
         handle = self.inspector.get_selected_entity_handle()
         if handle is not None:

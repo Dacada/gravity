@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from pydantic.annotated_handlers import GetCoreSchemaHandler
 from pydantic_core import core_schema
 
-from gravity.types import AnchorType
+from gravity.types import AnchorType, Color
 
 
 class RationalFloat(float):
@@ -75,7 +75,7 @@ class AppConfigSimulationControl(BaseModel):
 
 
 class AppConfigSimulationModel(BaseModel):
-    default_simulated_entity_color: tuple[int, int, int]
+    default_simulated_entity_color: Color
 
 
 class AppConfigSimulationPhysics(BaseModel):

@@ -78,13 +78,13 @@ class EventHandler:
                     handle = self._game.simulation.get_first_point()
                 else:
                     handle = self._game.simulation.get_last_point()
-                if handle is not None:
-                    self._game.inspector.set_selected_entity_handle(handle)
             else:
                 if left:
                     handle = self._game.simulation.get_next_point(handle)
                 else:
                     handle = self._game.simulation.get_prev_point(handle)
+
+            if handle is not None:
                 self._game.inspector.set_selected_entity_handle(handle)
 
             return True

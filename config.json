@@ -17,11 +17,19 @@
             "anchor": "BOTTOM_LEFT"
         }
     },
-    "physics_simulation": {
-        "gravitational_constant": 500.0,
-        "softening_factor": 1.0,
-        "merge_distance_squared": 0.75,
-        "default_simulated_entity_color": [255, 255, 255]
+    "simulation": {
+        "control": {
+            "physics_timedelta": { "ratio": "1/500" },
+            "physics_step_alloted_time_clamp": 0.25
+        },
+        "model": {
+            "default_simulated_entity_color": [255, 255, 255]
+        },
+        "physics": {
+            "gravitational_constant": 500.0,
+            "softening_factor": 1.0,
+            "merge_distance_squared": 0.75
+        }
     },
     "ui_format": {
         "position_format": ".3f",
@@ -38,10 +46,6 @@
     "cursor_ui": {
         "viewport_clickable_margin": 5,
         "selection_distance_squared": 20
-    },
-    "simulation_control": {
-        "physics_timedelta": { "ratio": "1/500" },
-        "physics_step_alloted_time_clamp": 0.25
     },
     "render": {
         "styles": {

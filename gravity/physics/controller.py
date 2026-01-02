@@ -1,50 +1,330 @@
+from dataclasses import dataclass
 from typing import Iterator, Optional, Self
 
 import pygame
 
-from gravity.config.schema import AppConfigSimulation
-from gravity.physics.core import SimulatedEntityHandle
-from gravity.physics.model import SimulatedEntity
+from gravity.config.schema import AppConfigSimulationControl, AppConfigSimulationModel
+from gravity.physics.core import MergeInfo, SimulatedEntityHandle, SimulationCore
+from gravity.physics.model import (
+    SimulatedEntity,
+)
+from gravity.types import Color
+
+
+@dataclass
+class _EntityDescription:
+    handle: SimulatedEntityHandle
+    name: Optional[str]
+    color: Color
+
+
+class SimulationEntityDescriptor:
+    def __init__(self, default_simulated_entity_color: Color):
+        self._default_simulated_entity_color = default_simulated_entity_color
+        self._descriptions: dict[SimulatedEntityHandle, _EntityDescription] = {}
+
+    def create(
+        self,
+        handle: SimulatedEntityHandle,
+        name: Optional[str] = None,
+        color: Optional[Color] = None,
+    ) -> None:
+        if handle in self._descriptions:
+            entity = self._descriptions[handle]
+            if name is not None:
+                entity.name = name
+            if color is not None:
+                entity.color = color
+            return
+
+        if color is None:
+            color = self._default_simulated_entity_color
+
+        self._descriptions[handle] = _EntityDescription(handle, name, color)
+
+    def delete(self, handle: SimulatedEntityHandle) -> None:
+        if handle not in self._descriptions:
+            return
+        del self._descriptions[handle]
+
+    def merge(
+        self,
+        hdl1: SimulatedEntityHandle,
+        hdl2: SimulatedEntityHandle,
+        new_hdl: SimulatedEntityHandle,
+    ) -> None:
+        entity1 = self._get(hdl1)
+        entity2 = self._get(hdl2)
+
+        name1 = None
+        if entity1 is not None:
+            if entity1.name is not None:
+                name1 = entity1.name
+
+        name2 = None
+        if entity2 is not None:
+            if entity2.name is not None:
+                name2 = entity2.name
+
+        if name1 is not None and name2 is not None:
+            new_name = name1 + " / " + name2
+        elif name1 is not None:
+            new_name = name1
+        elif name2 is not None:
+            new_name = name2
+        else:
+            new_name = None
+
+        if entity1 is not None and entity2 is not None:
+            new_color = entity1.color.merge(entity2.color)
+        elif entity1 is not None:
+            new_color = entity1.color
+        elif entity2 is not None:
+            new_color = entity2.color
+        else:
+            new_color = self._default_simulated_entity_color
+
+        self.delete(hdl1)
+        self.delete(hdl2)
+        self.create(new_hdl, new_name, new_color)
+
+    def _get(self, handle: SimulatedEntityHandle) -> Optional[_EntityDescription]:
+        return self._descriptions.get(handle)
+
+    def get_name(self, handle: SimulatedEntityHandle) -> Optional[str]:
+        descr = self._get(handle)
+        if descr is None:
+            return None
+        return descr.name
+
+    def get_color(self, handle: SimulatedEntityHandle) -> Color:
+        descr = self._get(handle)
+        if descr is None:
+            return self._default_simulated_entity_color
+        return descr.color
+
+    @classmethod
+    def from_config(cls, cfg: AppConfigSimulationModel) -> Self:
+        return cls(
+            cfg.default_simulated_entity_color,
+        )
+
+
+@dataclass
+class _ListNode:
+    handle: SimulatedEntityHandle
+    next: Self
+    prev: Self
+
+
+class SimulationEntityOrderController:
+    def __init__(self) -> None:
+        self._first: Optional[_ListNode] = None
+        self._last: Optional[_ListNode] = None
+        self._nodes: dict[SimulatedEntityHandle, _ListNode] = {}
+
+    def append(self, handle: SimulatedEntityHandle) -> None:
+        if handle in self._nodes:
+            return
+
+        node = _ListNode(handle, None, None)  # type: ignore
+        node.next = node
+        node.prev = node
+        self._nodes[handle] = node
+
+        if self._last is None or self._first is None:
+            self._last = self._first = node
+            return
+
+        self._last.next = node
+        node.prev = self._last
+        node.next = self._first
+        self._first.prev = node
+        self._last = node
+
+    def remove(self, handle: SimulatedEntityHandle) -> None:
+        if handle not in self._nodes:
+            return
+
+        node = self._nodes[handle]
+        del self._nodes[handle]
+
+        if node is self._last and node is self._first:
+            self._last = self._first = None
+            return
+
+        if node is self._first:
+            self._first = node.next
+
+        if node is self._last:
+            self._last = node.prev
+
+        node.prev.next = node.next
+        node.next.prev = node.prev
+
+    def last(self) -> Optional[SimulatedEntityHandle]:
+        if self._last is None:
+            return None
+        return self._last.handle
+
+    def first(self) -> Optional[SimulatedEntityHandle]:
+        if self._first is None:
+            return None
+        return self._first.handle
+
+    def next(self, handle: SimulatedEntityHandle) -> Optional[SimulatedEntityHandle]:
+        if handle not in self._nodes:
+            return None
+        return self._nodes[handle].next.handle
+
+    def prev(self, handle: SimulatedEntityHandle) -> Optional[SimulatedEntityHandle]:
+        if handle not in self._nodes:
+            return None
+        return self._nodes[handle].prev.handle
+
+
+class SimulationEntityCounter:
+    def __init__(self) -> None:
+        self._monotonic_counter = 0
+        self._entities: dict[SimulatedEntityHandle, int] = {}
+
+    def add(self, handle: SimulatedEntityHandle) -> None:
+        if handle in self._entities:
+            return
+
+        self._entities[handle] = self._monotonic_counter
+        self._monotonic_counter += 1
+
+    def remove(self, handle: SimulatedEntityHandle) -> None:
+        if handle not in self._entities:
+            return
+
+        del self._entities[handle]
+
+    def get_index(self, handle: SimulatedEntityHandle) -> int:
+        if handle not in self._entities:
+            self.add(handle)
+
+        return self._entities[handle]
 
 
 class SimulationController:
+    def __init__(
+        self,
+        simulation_core: SimulationCore,
+        simulation_entity_descriptor: SimulationEntityDescriptor,
+        physics_timedelta: float,
+        physics_step_alloted_time_clamp: float,
+    ):
+        self._simulation_core = simulation_core
+        self._simulation_entity_descriptor = simulation_entity_descriptor
+        self._simulation_entity_order_controller = SimulationEntityOrderController()
+        self._simulation_entity_counter = SimulationEntityCounter()
+        self._physics_loop_accumulator = 0.0
+
+        self._physics_timedelta = physics_timedelta
+        self._physics_step_alloted_time_clamp = physics_step_alloted_time_clamp
+
     @classmethod
-    def from_config(cls, cfg: AppConfigSimulation) -> Self:
-        pass
+    def from_config(
+        cls,
+        cfg: AppConfigSimulationControl,
+        simulation_core: SimulationCore,
+        simulation_entity_descriptor: SimulationEntityDescriptor,
+    ) -> Self:
+        return cls(
+            simulation_core,
+            simulation_entity_descriptor,
+            cfg.physics_timedelta,
+            cfg.physics_step_alloted_time_clamp,
+        )
 
     def create(
-        self, pos: Optional[pygame.Vector2] = None, mass: Optional[float] = None
+        self,
+        pos: Optional[pygame.Vector2] = None,
+        vel: Optional[pygame.Vector2] = None,
+        mass: Optional[float] = None,
+        name: Optional[str] = None,
+        color: Optional[Color] = None,
     ) -> SimulatedEntityHandle:
-        pass
+        if pos is None:
+            pos = pygame.Vector2(0.0, 0.0)
+        if vel is None:
+            vel = pygame.Vector2(0.0, 0.0)
+        if mass is None:
+            mass = 1.0
+
+        handle = self._simulation_core.create(pos, vel, mass)
+        self._simulation_entity_descriptor.create(handle, name, color)
+        self._simulation_entity_order_controller.append(handle)
+        self._simulation_entity_counter.add(handle)
+        return handle
 
     def delete(self, handle: SimulatedEntityHandle) -> None:
-        pass
+        self._simulation_entity_counter.remove(handle)
+        self._simulation_entity_order_controller.remove(handle)
+        self._simulation_entity_descriptor.delete(handle)
+        self._simulation_core.delete(handle)
 
     def get(self, handle: SimulatedEntityHandle) -> Optional[SimulatedEntity]:
-        pass
+        entity = self._simulation_core.get(handle)
+        if entity is None:
+            return None
 
-    def update(self) -> None:
-        pass
+        pos, vel, mass = entity
+        color = self._simulation_entity_descriptor.get_color(handle)
+        name = self._simulation_entity_descriptor.get_name(handle)
+        index = self._simulation_entity_counter.get_index(handle)
+        return SimulatedEntity(pos, vel, mass, color, name, index)
+
+    def update(self, dt: float) -> None:
+        if dt > self._physics_step_alloted_time_clamp:
+            dt = self._physics_step_alloted_time_clamp
+
+        merges: list[MergeInfo] = []
+
+        self._physics_loop_accumulator += dt
+        while self._physics_loop_accumulator >= self._physics_timedelta:
+            merges.extend(self._simulation_core.update(self._physics_timedelta))
+            self._physics_loop_accumulator -= self._physics_timedelta
+
+        self._process_merges(merges)
+
+    def _process_merges(self, merges: list[MergeInfo]) -> None:
+        for merge in merges:
+            hdl1, hdl2 = merge.merged
+            hdl_new = merge.into
+            self._simulation_entity_descriptor.merge(hdl1, hdl2, hdl_new)
+            self._simulation_entity_order_controller.remove(hdl1)
+            self._simulation_entity_order_controller.remove(hdl2)
+            self._simulation_entity_order_controller.append(hdl_new)
+            self._simulation_entity_counter.remove(hdl1)
+            self._simulation_entity_counter.remove(hdl2)
+            self._simulation_entity_counter.add(hdl_new)
 
     def center_of_mass(self) -> pygame.Vector2:
-        pass
+        return self._simulation_core.center_of_mass()
 
     def entities_in_rect_iter(
         self, topleft: pygame.Vector2, bottomright: pygame.Vector2
     ) -> Iterator[SimulatedEntityHandle]:
-        pass
+        return self._simulation_core.entities_in_rect_iter(topleft, bottomright)
 
     def is_handle_valid(self, handle: SimulatedEntityHandle) -> bool:
-        pass
+        return self._simulation_core.is_handle_valid(handle)
 
     def get_first_point(self) -> Optional[SimulatedEntityHandle]:
-        pass
+        return self._simulation_entity_order_controller.last()
 
     def get_last_point(self) -> Optional[SimulatedEntityHandle]:
-        pass
+        return self._simulation_entity_order_controller.first()
 
-    def get_next_point(self, handle: SimulatedEntityHandle) -> SimulatedEntityHandle:
-        pass
+    def get_next_point(
+        self, handle: SimulatedEntityHandle
+    ) -> Optional[SimulatedEntityHandle]:
+        return self._simulation_entity_order_controller.next(handle)
 
-    def get_prev_point(self, handle: SimulatedEntityHandle) -> SimulatedEntityHandle:
-        pass
+    def get_prev_point(
+        self, handle: SimulatedEntityHandle
+    ) -> Optional[SimulatedEntityHandle]:
+        return self._simulation_entity_order_controller.prev(handle)
