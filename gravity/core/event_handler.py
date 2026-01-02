@@ -30,7 +30,7 @@ class EventHandler:
             handle = self._game.cursor_ui_controller.find_closest_point_screen_space(
                 self._game.camera,
                 self._game.simulation,
-                event.pos,
+                pygame.Vector2(event.pos),
             )
             if handle is None:
                 self._game.inspector.unselect_entity_handle()
@@ -75,14 +75,14 @@ class EventHandler:
             handle = self._game.inspector.get_selected_entity_handle()
             if handle is None:
                 if left:
-                    handle = self._game.simulation.get_first_point()
-                else:
                     handle = self._game.simulation.get_last_point()
+                else:
+                    handle = self._game.simulation.get_first_point()
             else:
                 if left:
-                    handle = self._game.simulation.get_next_point(handle)
-                else:
                     handle = self._game.simulation.get_prev_point(handle)
+                else:
+                    handle = self._game.simulation.get_next_point(handle)
 
             if handle is not None:
                 self._game.inspector.set_selected_entity_handle(handle)

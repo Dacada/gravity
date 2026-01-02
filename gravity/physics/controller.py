@@ -97,11 +97,23 @@ class SimulationEntityDescriptor:
             return None
         return descr.name
 
+    def set_name(self, handle: SimulatedEntityHandle, name: Optional[str]) -> None:
+        descr = self._get(handle)
+        if descr is None:
+            return
+        descr.name = name
+
     def get_color(self, handle: SimulatedEntityHandle) -> Color:
         descr = self._get(handle)
         if descr is None:
             return self._default_simulated_entity_color
         return descr.color
+
+    def set_color(self, handle: SimulatedEntityHandle, color: Color) -> None:
+        descr = self._get(handle)
+        if descr is None:
+            return
+        descr.color = color
 
     @classmethod
     def from_config(cls, cfg: AppConfigSimulationModel) -> Self:
@@ -187,18 +199,21 @@ class SimulationEntityCounter:
     def __init__(self) -> None:
         self._monotonic_counter = 0
         self._entities: dict[SimulatedEntityHandle, int] = {}
+        self._indices: dict[int, SimulatedEntityHandle] = {}
 
     def add(self, handle: SimulatedEntityHandle) -> None:
         if handle in self._entities:
             return
 
         self._entities[handle] = self._monotonic_counter
+        self._indices[self._monotonic_counter] = handle
         self._monotonic_counter += 1
 
     def remove(self, handle: SimulatedEntityHandle) -> None:
         if handle not in self._entities:
             return
 
+        del self._indices[self._entities[handle]]
         del self._entities[handle]
 
     def get_index(self, handle: SimulatedEntityHandle) -> int:
@@ -206,6 +221,12 @@ class SimulationEntityCounter:
             self.add(handle)
 
         return self._entities[handle]
+
+    def get_handle(self, idx: int) -> Optional[SimulatedEntityHandle]:
+        if idx not in self._indices:
+            return None
+
+        return self._indices[idx]
 
 
 class SimulationController:
@@ -277,6 +298,26 @@ class SimulationController:
         index = self._simulation_entity_counter.get_index(handle)
         return SimulatedEntity(pos, vel, mass, color, name, index)
 
+    def apply(self, entity: SimulatedEntity) -> None:
+        handle = self._simulation_entity_counter.get_handle(entity.index)
+        if handle is None:
+            return
+
+        if SimulatedEntity.x.was_modified(entity) or SimulatedEntity.y.was_modified(
+            entity
+        ):
+            self._simulation_core.set_position(handle, entity.pos)
+        if SimulatedEntity.vx.was_modified(entity) or SimulatedEntity.vy.was_modified(
+            entity
+        ):
+            self._simulation_core.set_velocity(handle, entity.vel)
+        if SimulatedEntity.mass.was_modified(entity):
+            self._simulation_core.set_mass(handle, entity.mass)
+        if SimulatedEntity.color.was_modified(entity):
+            self._simulation_entity_descriptor.set_color(handle, entity.color)
+        if SimulatedEntity.name.was_modified(entity):
+            self._simulation_entity_descriptor.set_name(handle, entity.name)
+
     def update(self, dt: float) -> None:
         if dt > self._physics_step_alloted_time_clamp:
             dt = self._physics_step_alloted_time_clamp
@@ -313,10 +354,10 @@ class SimulationController:
     def is_handle_valid(self, handle: SimulatedEntityHandle) -> bool:
         return self._simulation_core.is_handle_valid(handle)
 
-    def get_first_point(self) -> Optional[SimulatedEntityHandle]:
+    def get_last_point(self) -> Optional[SimulatedEntityHandle]:
         return self._simulation_entity_order_controller.last()
 
-    def get_last_point(self) -> Optional[SimulatedEntityHandle]:
+    def get_first_point(self) -> Optional[SimulatedEntityHandle]:
         return self._simulation_entity_order_controller.first()
 
     def get_next_point(

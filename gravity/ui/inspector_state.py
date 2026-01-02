@@ -14,7 +14,7 @@ class UIControl(Protocol):
 
     def get_and_format(self, p: Optional[SimulatedEntity]) -> Optional[str]: ...
     def get_empty_value_formatted(self) -> str: ...
-    def parse_and_set(self, v: str, p: Optional[SimulatedEntity]) -> bool: ...
+    def parse_and_set(self, v: str, p: SimulatedEntity) -> bool: ...
 
 
 class InspectorUIControlState[T]:
@@ -41,9 +41,9 @@ class InspectorUIControlState[T]:
     def get_empty_value_formatted(self) -> str:
         return "<empty>"
 
-    def parse_and_set(self, v: str, p: Optional[SimulatedEntity]) -> bool:
+    def parse_and_set(self, v: str, p: SimulatedEntity) -> bool:
         val = self._parse(v)
-        if p is None or val is None:
+        if val is None:
             return False
         setattr(p, self._attr_name, val)
         return True
@@ -133,6 +133,9 @@ class InspectorUIState:
         handler = self.get_selected_entity_handle()
         if handler is not None:
             entity = simulation.get(handler)
+            if entity is None:
+                return
             success = control.parse_and_set(self._typing, entity)
             if success:
+                simulation.apply(entity)
                 self._typing = ""

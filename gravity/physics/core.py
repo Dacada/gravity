@@ -90,6 +90,27 @@ class SimulationCore:
             self._masses[array_idx],
         )
 
+    def set_position(self, handle: SimulatedEntityHandle, pos: pygame.Vector2) -> None:
+        if not self.is_handle_valid(handle):
+            return
+
+        array_idx = self._slots[handle.slot_idx].array_idx
+        self._positions[array_idx] = pos.copy()
+
+    def set_velocity(self, handle: SimulatedEntityHandle, vel: pygame.Vector2) -> None:
+        if not self.is_handle_valid(handle):
+            return
+
+        array_idx = self._slots[handle.slot_idx].array_idx
+        self._velocities[array_idx] = vel.copy()
+
+    def set_mass(self, handle: SimulatedEntityHandle, mass: float) -> None:
+        if not self.is_handle_valid(handle):
+            return
+
+        array_idx = self._slots[handle.slot_idx].array_idx
+        self._masses[array_idx] = mass
+
     def delete(self, handle: SimulatedEntityHandle) -> None:
         if not self.is_handle_valid(handle):
             return
