@@ -4,26 +4,22 @@ import pygame
 
 from gravity.camera import Camera, CameraController
 from gravity.config.schema import AppConfigSimulationControl
-from gravity.physics import PointMassSimulator
+from gravity.physics import SimulationController
+from gravity.physics.controller import SimulationController
 from gravity.ui import CursorUIController, InspectorUIState, PauseController
 
 
 class GameState:
     def __init__(
         self,
-        points: PointMassSimulator,
+        simulation: SimulationController,
         inspector: InspectorUIState,
         camera: Camera,
         camera_controller: CameraController,
         pause_controller: PauseController,
         cursor_ui_controller: CursorUIController,
-        physics_timedelta: float,
-        physics_step_alloted_time_clamp: float,
     ):
-        self._physics_timedelta = physics_timedelta
-        self._physics_step_alloted_time_clamp = physics_step_alloted_time_clamp
-
-        self.points = points
+        self.simulation = simulation
         self.inspector = inspector
         self.camera = camera
         self.camera_controller = camera_controller
@@ -33,28 +29,6 @@ class GameState:
         self._running = True
         self._physics_loop_accumulator = 0.0
         self._resize: Optional[pygame.Vector2] = None
-
-    @classmethod
-    def from_config(
-        cls,
-        cfg: AppConfigSimulationControl,
-        points: PointMassSimulator,
-        inspector: InspectorUIState,
-        camera: Camera,
-        camera_controller: CameraController,
-        pause_controller: PauseController,
-        cursor_ui_controller: CursorUIController,
-    ) -> Self:
-        return cls(
-            points,
-            inspector,
-            camera,
-            camera_controller,
-            pause_controller,
-            cursor_ui_controller,
-            cfg.physics_timedelta,
-            cfg.physics_step_alloted_time_clamp,
-        )
 
     def stop(self) -> None:
         self._running = False
@@ -74,21 +48,11 @@ class GameState:
         self.pause_controller.update(dt)
 
         if not self.pause_controller.is_paused():
-            self._update_physics_loop(dt)
+            self.simulation.update()
 
-        p = self.inspector.get_selected_point()
-        if p is not None:
-            idx = self.points.index(p)
-            if idx is None:
-                self.inspector.unselect_point()
+        handle = self.inspector.get_selected_entity_handle()
+        if handle is not None:
+            if not self.simulation.is_handle_valid(handle):
+                self.inspector.unselect_entity_handle()
 
-        self.camera_controller.update(p, self.camera, self.points, dt)
-
-    def _update_physics_loop(self, dt: float) -> None:
-        if dt > self._physics_step_alloted_time_clamp:
-            dt = self._physics_step_alloted_time_clamp
-
-        self._physics_loop_accumulator += dt
-        while self._physics_loop_accumulator >= self._physics_timedelta:
-            self.points.update(self._physics_timedelta)
-            self._physics_loop_accumulator -= self._physics_timedelta
+        self.camera_controller.update(dt, self.camera, self.simulation, handle)

@@ -4,7 +4,6 @@ import pygame
 
 from gravity.core import GameState
 from gravity.layout import Layout
-from gravity.physics import PointMass
 
 logger = logging.getLogger(__name__)
 
@@ -26,15 +25,17 @@ class EventHandler:
             if self._game.cursor_ui_controller.is_viewport_click_allowed(event.pos):
                 pos = pygame.Vector2(*event.pos)
                 pos_world = self._game.camera.screen_to_world(pos)
-                self._game.points.create(pos_world)
+                self._game.simulation.create(pos=pos_world)
         elif event.button == RIGHT_MOUSE_BUTTON:
-            p = self._game.cursor_ui_controller.find_closest_point_screen_space(
-                self._game.points, self._game.camera, event.pos
+            handle = self._game.cursor_ui_controller.find_closest_point_screen_space(
+                self._game.camera,
+                self._game.simulation,
+                event.pos,
             )
-            if p is None:
-                self._game.inspector.unselect_point()
+            if handle is None:
+                self._game.inspector.unselect_entity_handle()
             else:
-                self._game.inspector.set_selected_point(p)
+                self._game.inspector.set_selected_entity_handle(handle)
 
     def on_KeyDown(self, event: pygame.event.Event) -> None:
         is_control = bool(event.mod & pygame.KMOD_CTRL)
@@ -69,22 +70,22 @@ class EventHandler:
 
         # select via keyboard (maybe from unselected)
         if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
-            if event.key == pygame.K_LEFT:
-                inc = -1
-            else:
-                inc = 1
-            p = self._game.inspector.get_selected_point()
+            left = event.key == pygame.K_LEFT
 
-            if p is None:
-                p = self._game.points.by_index(0)
-                if p is not None:
-                    self._game.inspector.set_selected_point(p)
+            handle = self._game.inspector.get_selected_entity_handle()
+            if handle is None:
+                if left:
+                    handle = self._game.simulation.get_first_point()
+                else:
+                    handle = self._game.simulation.get_last_point()
+                if handle is not None:
+                    self._game.inspector.set_selected_entity_handle(handle)
             else:
-                idx = self._game.points.index(p)
-                if idx is not None:
-                    q = self._game.points.by_index(idx + inc)
-                    if q is not None:
-                        self._game.inspector.set_selected_point(q)
+                if left:
+                    handle = self._game.simulation.get_next_point(handle)
+                else:
+                    handle = self._game.simulation.get_prev_point(handle)
+                self._game.inspector.set_selected_entity_handle(handle)
 
             return True
 
@@ -117,7 +118,7 @@ class EventHandler:
             if self._game.camera_controller.is_follow_selected_mass_mode():
                 self._game.camera_controller.unset_follow_mode()
             else:
-                if self._game.inspector.get_selected_point() is not None:
+                if self._game.inspector.get_selected_entity_handle() is not None:
                     self._game.camera_controller.set_follow_mode_selected_mass()
             return True
 
@@ -143,14 +144,14 @@ class EventHandler:
             self._game.camera_controller.reset_zoom_direction()
 
     def _handle_inspector(self, event: pygame.event.Event) -> bool:
-        p = self._game.inspector.get_selected_point()
-        if p is None:
+        handle = self._game.inspector.get_selected_entity_handle()
+        if handle is None:
             return False
 
         # delete selection
         if event.key == pygame.K_DELETE:
-            self._game.inspector.unselect_point()
-            self._game.points.delete(p)
+            self._game.inspector.unselect_entity_handle()
+            self._game.simulation.delete(handle)
             return True
 
         # navigate inspector via tab
@@ -184,7 +185,7 @@ class EventHandler:
 
         # commit typed text in inspector value
         if event.key == pygame.K_RETURN:
-            self._game.inspector.try_commit()
+            self._game.inspector.try_commit(self._game.simulation)
             return True
 
         # input character if visible character

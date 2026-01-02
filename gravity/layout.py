@@ -54,9 +54,9 @@ class Layout:
             LayoutIcon.from_config(cfg.camera_state_icon),
         )
 
-    def resize(self, width: int, height: int) -> None:
-        self._width = width
-        self._height = height
+    def resize(self, size: pygame.Vector2) -> None:
+        self._width = int(size.x)
+        self._height = int(size.y)
         self._recalculate()
 
     @property

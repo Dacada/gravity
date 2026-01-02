@@ -11,8 +11,8 @@ from gravity.config.schema import (
     AppConfigRenderStyleInspector,
     AppConfigRenderStyleName,
     AppConfigRenderStylePauseIcon,
-    AppConfigRenderStylePointMass,
     AppConfigRenderStyles,
+    AppConfigRenderStyleSimulatedEntity,
     AppConfigRenderStyleTargetIcon,
 )
 from gravity.types import Color
@@ -254,14 +254,14 @@ class InspectorStyle:
 
 
 @dataclass
-class PointMassStyle:
+class SimulatedEntityStyle:
     radius: int
     reticle_padding: int
     reticle_width: int
     reticle_color: Color
 
     @classmethod
-    def from_config(cls, cfg: AppConfigRenderStylePointMass) -> Self:
+    def from_config(cls, cfg: AppConfigRenderStyleSimulatedEntity) -> Self:
         return cls(
             cfg.radius,
             cfg.reticle_padding,
@@ -290,7 +290,7 @@ class RenderStyle:
     com_icon: IconStyle
     freecam_icon: IconStyle
     inspector: InspectorStyle
-    point_mass: PointMassStyle
+    simulated_entity: SimulatedEntityStyle
     name: NameStyle
 
     @classmethod
@@ -301,6 +301,6 @@ class RenderStyle:
             CenterOfMassRingIconStyle.from_config(cfg.com_icon),
             FreeCamIconStyle.from_config(cfg.freecam_icon),
             InspectorStyle.from_config(cfg.inspector),
-            PointMassStyle.from_config(cfg.point_mass),
+            SimulatedEntityStyle.from_config(cfg.simulated_entity),
             NameStyle.from_config(cfg.name),
         )

@@ -1,4 +1,5 @@
-from gravity.physics.point_mass import PointMass
-from gravity.physics.simulator import PointMassSimulator
+from gravity.physics.controller import SimulationController
+from gravity.physics.core import SimulatedEntityHandle
+from gravity.physics.model import SimulatedEntity
 
-__all__ = ["PointMassSimulator", "PointMass"]
+__all__ = ["SimulationController", "SimulatedEntity", "SimulatedEntityHandle"]

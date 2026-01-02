@@ -2,7 +2,8 @@ import logging
 from typing import Any, Callable, Optional, Protocol, Self
 
 from gravity.config.schema import AppConfigUiFormat
-from gravity.physics import PointMass
+from gravity.physics import SimulatedEntity, SimulatedEntityHandle
+from gravity.physics.controller import SimulationController
 from gravity.types import Color
 
 logger = logging.getLogger(__name__)
@@ -11,8 +12,9 @@ logger = logging.getLogger(__name__)
 class UIControl(Protocol):
     label: str
 
-    def get_and_format(self, p: Optional[PointMass]) -> Optional[str]: ...
-    def parse_and_set(self, v: str, p: Optional[PointMass]) -> bool: ...
+    def get_and_format(self, p: Optional[SimulatedEntity]) -> Optional[str]: ...
+    def get_empty_value_formatted(self) -> str: ...
+    def parse_and_set(self, v: str, p: Optional[SimulatedEntity]) -> bool: ...
 
 
 class InspectorUIControlState[T]:
@@ -28,7 +30,7 @@ class InspectorUIControlState[T]:
         self._parser = parser
         self._formatter = formatter
 
-    def get_and_format(self, p: Optional[PointMass]) -> Optional[str]:
+    def get_and_format(self, p: Optional[SimulatedEntity]) -> Optional[str]:
         if p is None:
             return None
         val = getattr(p, self._attr_name, None)
@@ -36,7 +38,10 @@ class InspectorUIControlState[T]:
             return None
         return self._formatter(val)
 
-    def parse_and_set(self, v: str, p: Optional[PointMass]) -> bool:
+    def get_empty_value_formatted(self) -> str:
+        return "<empty>"
+
+    def parse_and_set(self, v: str, p: Optional[SimulatedEntity]) -> bool:
         val = self._parse(v)
         if p is None or val is None:
             return False
@@ -76,7 +81,7 @@ class InspectorUIState:
             InspectorUIControlState("Y Vel", "vy", float, velocity_value_formatter),
             InspectorUIControlState("Mass", "mass", float, mass_value_formatter),
         ]
-        self._selected_point_mass: Optional[PointMass] = None
+        self._selected_entity: Optional[SimulatedEntityHandle] = None
         self._current_idx = 0
         self._typing = ""
 
@@ -89,18 +94,18 @@ class InspectorUIState:
         )
 
     def reset(self) -> None:
-        self._selected_point_mass = None
+        self._selected_entity = None
         self._current_idx = 0
         self._typing = ""
 
-    def get_selected_point(self) -> Optional[PointMass]:
-        return self._selected_point_mass
+    def get_selected_entity_handle(self) -> Optional[SimulatedEntityHandle]:
+        return self._selected_entity
 
-    def set_selected_point(self, point: PointMass) -> None:
-        self._selected_point_mass = point
+    def set_selected_entity_handle(self, entity: SimulatedEntityHandle) -> None:
+        self._selected_entity = entity
 
-    def unselect_point(self) -> None:
-        self._selected_point_mass = None
+    def unselect_entity_handle(self) -> None:
+        self._selected_entity = None
 
     def get_current_idx(self) -> int:
         return self._current_idx
@@ -123,8 +128,11 @@ class InspectorUIState:
     def get_typing_input(self) -> str:
         return self._typing
 
-    def try_commit(self) -> None:
+    def try_commit(self, simulation: SimulationController) -> None:
         control = self.controls[self._current_idx]
-        success = control.parse_and_set(self._typing, self.get_selected_point())
-        if success:
-            self._typing = ""
+        handler = self.get_selected_entity_handle()
+        if handler is not None:
+            entity = simulation.get(handler)
+            success = control.parse_and_set(self._typing, entity)
+            if success:
+                self._typing = ""

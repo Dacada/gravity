@@ -69,11 +69,25 @@ class AppConfigLayout(BaseModel):
     camera_state_icon: AppConfigLayoutIcon
 
 
-class AppConfigPhysicsSimulation(BaseModel):
+class AppConfigSimulationControl(BaseModel):
+    physics_timedelta: RationalFloat
+    physics_step_alloted_time_clamp: RationalFloat
+
+
+class AppConfigSimulationModel(BaseModel):
+    default_simulated_entity_color: tuple[int, int, int]
+
+
+class AppConfigSimulationPhysics(BaseModel):
     gravitational_constant: float
     softening_factor: float
     merge_distance_squared: float
-    default_point_mass_color: tuple[int, int, int]
+
+
+class AppConfigSimulation(BaseModel):
+    control: AppConfigSimulationControl
+    model: AppConfigSimulationModel
+    physics: AppConfigSimulationPhysics
 
 
 class AppConfigUiFormat(BaseModel):
@@ -94,11 +108,6 @@ class AppConfigPauseAnimation(BaseModel):
 class AppConfigCursorUi(BaseModel):
     viewport_clickable_margin: int
     selection_distance_squared: int
-
-
-class AppConfigSimulationControl(BaseModel):
-    physics_timedelta: RationalFloat
-    physics_step_alloted_time_clamp: RationalFloat
 
 
 class AppConfigRenderStylePauseIcon(BaseModel):
@@ -140,7 +149,7 @@ class AppConfigRenderStyleInspector(BaseModel):
     control_separation: int
 
 
-class AppConfigRenderStylePointMass(BaseModel):
+class AppConfigRenderStyleSimulatedEntity(BaseModel):
     radius: int
     reticle_padding: int
     reticle_width: int
@@ -158,7 +167,7 @@ class AppConfigRenderStyles(BaseModel):
     com_icon: AppConfigRenderStyleComIcon
     freecam_icon: AppConfigRenderStyleFreeCamIcon
     inspector: AppConfigRenderStyleInspector
-    point_mass: AppConfigRenderStylePointMass
+    simulated_entity: AppConfigRenderStyleSimulatedEntity
     name: AppConfigRenderStyleName
 
 
@@ -171,10 +180,9 @@ class AppConfigRender(BaseModel):
 class AppConfig(BaseModel):
     core: AppConfigCore
     layout: AppConfigLayout
-    physics_simulation: AppConfigPhysicsSimulation
+    simulation: AppConfigSimulation
     ui_format: AppConfigUiFormat
     camera: AppConfigCamera
     pause_animation: AppConfigPauseAnimation
     cursor_ui: AppConfigCursorUi
-    simulation_control: AppConfigSimulationControl
     render: AppConfigRender

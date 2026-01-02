@@ -4,12 +4,13 @@ from typing import Optional
 import pygame
 
 from gravity.camera import Camera
-from gravity.physics import PointMass, PointMassSimulator
+from gravity.physics.controller import SimulationController
+from gravity.physics.core import SimulatedEntityHandle
 
 
 class CameraFollowMode(Enum):
     NONE = auto()
-    SELECTED_POINT_MASS = auto()
+    SELECTED_SIMULATED_ENTITY = auto()
     CENTER_OF_MASS = auto()
 
 
@@ -63,7 +64,7 @@ class CameraController:
         return (self._pan_direction_x, self._pan_direction_y, self._zoom_direction)
 
     def set_follow_mode_selected_mass(self) -> None:
-        self._follow_mode = CameraFollowMode.SELECTED_POINT_MASS
+        self._follow_mode = CameraFollowMode.SELECTED_SIMULATED_ENTITY
 
     def set_follow_mode_center_of_mass(self) -> None:
         self._follow_mode = CameraFollowMode.CENTER_OF_MASS
@@ -75,17 +76,17 @@ class CameraController:
         return self._follow_mode != CameraFollowMode.NONE
 
     def is_follow_selected_mass_mode(self) -> bool:
-        return self._follow_mode == CameraFollowMode.SELECTED_POINT_MASS
+        return self._follow_mode == CameraFollowMode.SELECTED_SIMULATED_ENTITY
 
     def is_follow_center_of_mass_mode(self) -> bool:
         return self._follow_mode == CameraFollowMode.CENTER_OF_MASS
 
     def update(
         self,
-        selected: Optional[PointMass],
-        camera: Camera,
-        points: PointMassSimulator,
         dt: float,
+        camera: Camera,
+        simulation: SimulationController,
+        selected: Optional[SimulatedEntityHandle],
     ) -> None:
         if not self.is_follow_mode_set():
             if self._pan_direction_x or self._pan_direction_y:
@@ -102,7 +103,11 @@ class CameraController:
             if selected is None:
                 self._follow_mode = CameraFollowMode.NONE
             else:
-                camera.set_world_center(selected.pos.copy())
+                entity = simulation.get(selected)
+                if entity is None:
+                    self._follow_mode = CameraFollowMode.NONE
+                else:
+                    camera.set_world_center(entity.pos)
 
         if self.is_follow_center_of_mass_mode():
-            camera.set_world_center(points.center_of_mass())
+            camera.set_world_center(simulation.center_of_mass())

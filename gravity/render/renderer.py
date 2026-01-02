@@ -6,7 +6,9 @@ from gravity.camera import Camera, CameraController
 from gravity.config.schema import AppConfigRender
 from gravity.core import GameState
 from gravity.layout import Layout
-from gravity.physics import PointMass, PointMassSimulator
+from gravity.physics.controller import SimulationController
+from gravity.physics.core import SimulatedEntityHandle
+from gravity.physics.model import SimulatedEntity
 from gravity.render.styles import IconStyle, IconStyleRenderArgs, RenderStyle
 from gravity.types import Color
 from gravity.ui import InspectorUIState, PauseController
@@ -48,7 +50,7 @@ class Renderer:
     def _maybe_resize(self, game: GameState) -> None:
         new_size = game.query_resize()
         if new_size is not None:
-            self._layout.resize(*new_size)
+            self._layout.resize(new_size)
             # actually, under wayland this does weird stuff
             # self._screen = self._make_surface()
 
@@ -60,47 +62,55 @@ class Renderer:
 
     def _render(self, game: GameState) -> None:
         self._render_viewport(
-            game.camera, game.points, game.inspector.get_selected_point()
+            game.camera,
+            game.simulation,
+            game.inspector.get_selected_entity_handle(),
         )
-        self._render_inspector(game.inspector, game.points)
+        self._render_inspector(game.inspector, game.simulation)
         self._render_overlay(game.pause_controller, game.camera_controller)
 
     def _render_viewport(
         self,
         camera: Camera,
-        points: PointMassSimulator,
-        selected_point: Optional[PointMass],
+        simulation: SimulationController,
+        selected_handle: Optional[SimulatedEntityHandle],
     ) -> None:
-        for p in points:
-            self._render_point_mass(camera, p, p is selected_point)
+        viewport = self._layout.viewport
+        topleft = camera.screen_to_world(pygame.Vector2(viewport.topleft))
+        bottomright = camera.screen_to_world(pygame.Vector2(viewport.bottomright))
+        entities_iter = simulation.entities_in_rect_iter(topleft, bottomright)
+        for handle in entities_iter:
+            entity = simulation.get(handle)
+            if entity is not None:
+                self._render_simulated_entity(camera, entity, handle == selected_handle)
 
-    def _render_point_mass(
-        self, camera: Camera, p: PointMass, is_selected: bool
+    def _render_simulated_entity(
+        self, camera: Camera, entity: SimulatedEntity, is_selected: bool
     ) -> None:
 
-        screen_pos = camera.world_to_screen(p.pos)
+        screen_pos = camera.world_to_screen(entity.pos)
 
         # Draw point
         pygame.draw.circle(
             self._screen,
-            p.color,
+            entity.color,
             screen_pos,
-            self._style.point_mass.radius,
+            self._style.simulated_entity.radius,
         )
 
         # Draw selection reticle
         if is_selected:
-            self._draw_point_mass_reticle(screen_pos)
+            self._draw_simulated_entity_reticle(screen_pos)
 
         # Draw label
-        if p.name:
-            self._draw_point_mass_label(p.name, p.color, screen_pos)
+        if entity.name is not None:
+            self._draw_simulated_entity_label(entity.name, entity.color, screen_pos)
 
-    def _draw_point_mass_reticle(self, screen_pos: pygame.Vector2) -> None:
-        radius = self._style.point_mass.radius
-        padding = self._style.point_mass.reticle_padding
-        line_width = self._style.point_mass.reticle_width
-        color = self._style.point_mass.reticle_color
+    def _draw_simulated_entity_reticle(self, screen_pos: pygame.Vector2) -> None:
+        radius = self._style.simulated_entity.radius
+        padding = self._style.simulated_entity.reticle_padding
+        line_width = self._style.simulated_entity.reticle_width
+        color = self._style.simulated_entity.reticle_color
 
         size = (radius + padding) * 2
 
@@ -114,7 +124,7 @@ class Renderer:
             width=line_width,
         )
 
-    def _draw_point_mass_label(
+    def _draw_simulated_entity_label(
         self, name: str, color: Color, start: pygame.Vector2
     ) -> None:
         diag_len = self._style.name.diagonal_length
@@ -134,7 +144,7 @@ class Renderer:
         self._screen.blit(text_surface, text_rect)
 
     def _render_inspector(
-        self, inspector: InspectorUIState, points: PointMassSimulator
+        self, inspector: InspectorUIState, simulator: SimulationController
     ) -> None:
         panel = self._layout.inspector
 
@@ -154,21 +164,22 @@ class Renderer:
 
         offset_y = 0
 
-        selected_point = inspector.get_selected_point()
-        if selected_point is None:
+        selected_handle = inspector.get_selected_entity_handle()
+        if selected_handle is None:
+            return
+        selected_entity = simulator.get(selected_handle)
+        if selected_entity is None:
             return
 
-        total = points.get_total()
-        curr = points.index(selected_point)
-        if curr is not None:
-            curr += 1
-
-        index_text = f"{curr} / {total}"
+        index_text = f"# {selected_entity.index}"
         self._render_text(index_text, panel, offset_y)
         offset_y += self._style.inspector.control_separation * 2
 
         for i, control in enumerate(inspector.controls):
-            value = control.get_and_format(selected_point)
+            value = control.get_and_format(selected_entity)
+            if value is None:
+                value = control.get_empty_value_formatted()
+
             text = f"{control.label}: {value}"
             if i == inspector.get_current_idx():
                 text += " ◀ "

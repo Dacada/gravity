@@ -37,7 +37,7 @@ class Camera:
         self._world_center += direction * dt * self._pan_speed
 
     def set_world_center(self, world_center: pygame.Vector2) -> None:
-        self._world_center = world_center
+        self._world_center = world_center.copy()
 
     def zoom(self, direction: int, dt: float) -> None:
         self._zoom *= self._zoom_factor ** (float(direction) * dt)

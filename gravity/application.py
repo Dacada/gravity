@@ -6,7 +6,7 @@ from gravity.camera import Camera, CameraController
 from gravity.config import AppConfig
 from gravity.core import EventHandler, GameState
 from gravity.layout import Layout
-from gravity.physics import PointMassSimulator
+from gravity.physics import SimulationController
 from gravity.render import Renderer
 from gravity.ui import CursorUIController, InspectorUIState, PauseController
 
@@ -40,12 +40,12 @@ class Application:
         w = 300
         h = 300
         for i in range(50):
-            self._game.points.create(
-                pygame.Vector2(
+            self._game.simulation.create(
+                pos=pygame.Vector2(
                     random.uniform(-w // 2, w // 2),
                     random.uniform(-h // 2, h // 2),
                 ),
-                abs(random.gauss(mu=0, sigma=1)),
+                mass=abs(random.gauss(mu=0, sigma=1)),
             )
 
     def _deinitialize(self) -> None:
@@ -68,17 +68,20 @@ class Application:
 
 
 def build_application(config: AppConfig) -> Application:
-    target_framerate = config.core.target_framerate
     layout = Layout.from_config(config.layout)
-    points = PointMassSimulator.from_config(config.physics_simulation)
+
+    simulation = SimulationController.from_config(config.simulation)
     inspector = InspectorUIState.from_config(config.ui_format)
     camera = Camera.from_config(config.camera, layout)
+
     camera_controller = CameraController()
     pause_controller = PauseController.from_config(config.pause_animation)
     cursor_ui_controller = CursorUIController.from_config(config.cursor_ui, layout)
-    game = GameState.from_config(
-        config.simulation_control,
-        points,
+
+    renderer = Renderer.from_config(config.render, layout)
+
+    game = GameState(
+        simulation,
         inspector,
         camera,
         camera_controller,
@@ -86,7 +89,7 @@ def build_application(config: AppConfig) -> Application:
         cursor_ui_controller,
     )
     events = EventHandler(game, layout)
-    renderer = Renderer.from_config(config.render, layout)
+
     return Application(
-        layout, game, events, renderer, target_framerate=target_framerate
+        layout, game, events, renderer, target_framerate=config.core.target_framerate
     )
