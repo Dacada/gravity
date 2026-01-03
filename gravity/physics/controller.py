@@ -241,7 +241,9 @@ class SimulationController:
         self._simulation_entity_descriptor = simulation_entity_descriptor
         self._simulation_entity_order_controller = SimulationEntityOrderController()
         self._simulation_entity_counter = SimulationEntityCounter()
+
         self._physics_loop_accumulator = 0.0
+        self._entity_cache: dict[SimulatedEntityHandle, SimulatedEntity] = {}
 
         self._physics_timedelta = physics_timedelta
         self._physics_step_alloted_time_clamp = physics_step_alloted_time_clamp
@@ -286,8 +288,13 @@ class SimulationController:
         self._simulation_entity_order_controller.remove(handle)
         self._simulation_entity_descriptor.delete(handle)
         self._simulation_core.delete(handle)
+        self._entity_cache.pop(handle)
 
     def get(self, handle: SimulatedEntityHandle) -> Optional[SimulatedEntity]:
+        res = self._entity_cache.get(handle)
+        if res is not None:
+            return res
+
         entity = self._simulation_core.get(handle)
         if entity is None:
             return None
@@ -296,7 +303,10 @@ class SimulationController:
         color = self._simulation_entity_descriptor.get_color(handle)
         name = self._simulation_entity_descriptor.get_name(handle)
         index = self._simulation_entity_counter.get_index(handle)
-        return SimulatedEntity(pos, vel, mass, color, name, index)
+
+        res = SimulatedEntity(pos, vel, mass, color, name, index)
+        self._entity_cache[handle] = res
+        return res
 
     def apply(self, entity: SimulatedEntity) -> None:
         handle = self._simulation_entity_counter.get_handle(entity.index)
@@ -307,16 +317,23 @@ class SimulationController:
             entity
         ):
             self._simulation_core.set_position(handle, entity.pos)
+            SimulatedEntity.x.clear_modified(entity)
+            SimulatedEntity.y.clear_modified(entity)
         if SimulatedEntity.vx.was_modified(entity) or SimulatedEntity.vy.was_modified(
             entity
         ):
             self._simulation_core.set_velocity(handle, entity.vel)
+            SimulatedEntity.vx.clear_modified(entity)
+            SimulatedEntity.vy.clear_modified(entity)
         if SimulatedEntity.mass.was_modified(entity):
             self._simulation_core.set_mass(handle, entity.mass)
+            SimulatedEntity.mass.clear_modified(entity)
         if SimulatedEntity.color.was_modified(entity):
             self._simulation_entity_descriptor.set_color(handle, entity.color)
+            SimulatedEntity.color.clear_modified(entity)
         if SimulatedEntity.name.was_modified(entity):
             self._simulation_entity_descriptor.set_name(handle, entity.name)
+            SimulatedEntity.name.clear_modified(entity)
 
     def update(self, dt: float) -> None:
         if dt > self._physics_step_alloted_time_clamp:
@@ -330,6 +347,7 @@ class SimulationController:
             self._physics_loop_accumulator -= self._physics_timedelta
 
         self._process_merges(merges)
+        self._entity_cache.clear()
 
     def _process_merges(self, merges: list[MergeInfo]) -> None:
         for merge in merges:

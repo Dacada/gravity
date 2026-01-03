@@ -37,6 +37,9 @@ class _TrackedField[T]:
     def was_modified(self, instance: Any) -> bool:
         return cast(bool, instance.__dict__.get(self.flag_name, False))
 
+    def clear_modified(self, instance: Any) -> None:
+        instance.__dict__[self.flag_name] = False
+
 
 class SimulatedEntity:
     x: _TrackedField[float] = _TrackedField("_tracking_enabled")

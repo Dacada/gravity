@@ -199,9 +199,6 @@ class EventHandler:
     def handle_events(self) -> None:
         for event in pygame.event.get():
             event_name = pygame.event.event_name(event.type)
-            name_for_log_msg = f"{event_name} ({event.type})"
-
-            logger.debug(f"process event: {name_for_log_msg}")
             callback = getattr(self, f"on_{event_name}", None)
             if callback is not None:
                 callback(event)
