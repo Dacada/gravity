@@ -30,10 +30,12 @@ class SimulationCore:
         self,
         gravitational_constant: float,
         softening_factor: float,
+        enable_merging: bool,
         merge_distance_squared: float,
     ) -> None:
         self._gravitational_constant = gravitational_constant
         self._softening_factor = softening_factor
+        self._enable_merging = enable_merging
         self._merge_distance_squared = merge_distance_squared
 
         self._positions: list[pygame.Vector2] = []
@@ -49,6 +51,7 @@ class SimulationCore:
         return cls(
             cfg.gravitational_constant,
             cfg.softening_factor,
+            cfg.enable_merging,
             cfg.merge_distance_squared,
         )
 
@@ -201,7 +204,10 @@ class SimulationCore:
         return acc
 
     def _merge_all_masses(self) -> list[MergeInfo]:
-        merges = []
+        merges: list[MergeInfo] = []
+        if not self._enable_merging:
+            return merges
+
         while True:
             merge = self._merge_masses()
             if merge is None:

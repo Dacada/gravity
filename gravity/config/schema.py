@@ -81,6 +81,7 @@ class AppConfigSimulationModel(BaseModel):
 class AppConfigSimulationPhysics(BaseModel):
     gravitational_constant: float
     softening_factor: float
+    enable_merging: bool
     merge_distance_squared: float
 
 

@@ -28,6 +28,7 @@
         "physics": {
             "gravitational_constant": 500.0,
             "softening_factor": 1.0,
+            "enable_merging": false,
             "merge_distance_squared": 0.75
         }
     },
