@@ -2,24 +2,39 @@ import argparse
 from pathlib import Path
 from typing import NoReturn
 
-from gravity.application import build_application
+from gravity.application import build_application, run_benchmark
 from gravity.config import load_config
 
 
-def main() -> NoReturn:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "mode",
+        choices=["run", "benchmark"],
+    )
     parser.add_argument(
         "-c",
         "--config",
         type=Path,
         help="Path to configuration file",
     )
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> NoReturn:
+    args = parse_args()
 
     cfg = load_config(args.config)
-    app = build_application(cfg)
 
-    raise SystemExit(app.run())
+    if args.mode == "run":
+        app = build_application(cfg)
+        res = app.run()
+    elif args.mode == "benchmark":
+        res = run_benchmark(cfg)
+    else:
+        res = 1
+
+    raise SystemExit(res)
 
 
 if __name__ == "__main__":
