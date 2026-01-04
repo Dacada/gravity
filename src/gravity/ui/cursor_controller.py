@@ -6,8 +6,7 @@ import pygame
 from gravity.camera import Camera
 from gravity.config.schema import AppConfigCursorUi
 from gravity.layout import Layout
-from gravity.physics import SimulatedEntityHandle
-from gravity.physics.controller import SimulationController
+from gravity.physics import SimulatedEntityHandle, SimulationController
 
 
 class CursorUIController:

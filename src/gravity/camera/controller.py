@@ -4,8 +4,7 @@ from typing import Optional
 import pygame
 
 from gravity.camera import Camera
-from gravity.physics.controller import SimulationController
-from gravity.physics.core import SimulatedEntityHandle
+from gravity.physics import SimulatedEntityHandle, SimulationController
 
 
 class CameraFollowMode(Enum):

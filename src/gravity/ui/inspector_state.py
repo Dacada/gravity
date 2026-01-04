@@ -2,8 +2,7 @@ import logging
 from typing import Any, Callable, Optional, Protocol, Self
 
 from gravity.config.schema import AppConfigUiFormat
-from gravity.physics import SimulatedEntity, SimulatedEntityHandle
-from gravity.physics.controller import SimulationController
+from gravity.physics import SimulatedEntity, SimulatedEntityHandle, SimulationController
 from gravity.types import Color
 
 logger = logging.getLogger(__name__)

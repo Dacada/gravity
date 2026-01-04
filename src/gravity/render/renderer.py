@@ -6,9 +6,7 @@ from gravity.camera import Camera, CameraController
 from gravity.config.schema import AppConfigRender
 from gravity.core import GameState
 from gravity.layout import Layout
-from gravity.physics.controller import SimulationController
-from gravity.physics.core import SimulatedEntityHandle
-from gravity.physics.model import SimulatedEntity
+from gravity.physics import SimulatedEntity, SimulatedEntityHandle, SimulationController
 from gravity.render.styles import IconStyle, IconStyleRenderArgs, RenderStyle
 from gravity.types import Color
 from gravity.ui import InspectorUIState, PauseController

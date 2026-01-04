@@ -1,0 +1,3 @@
+struct gravity {
+  int *foo;
+};

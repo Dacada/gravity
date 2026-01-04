@@ -3,9 +3,7 @@ from typing import Optional, Self
 import pygame
 
 from gravity.camera import Camera, CameraController
-from gravity.config.schema import AppConfigSimulationControl
 from gravity.physics import SimulationController
-from gravity.physics.controller import SimulationController
 from gravity.ui import CursorUIController, InspectorUIState, PauseController
 
 

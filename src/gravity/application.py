@@ -4,9 +4,9 @@ import sys
 import time
 from collections import defaultdict, deque
 from contextlib import contextmanager
+from typing import Iterator, Optional
 
 import pygame
-from typing_extensions import Optional
 
 from gravity.camera import Camera, CameraController
 from gravity.config import AppConfig
@@ -33,7 +33,7 @@ class _Timer:
         self._current_count += 1
 
     @contextmanager
-    def time(self, name: str):
+    def time(self, name: str) -> Iterator[None]:
         t0 = time.perf_counter()
         try:
             yield
@@ -126,7 +126,7 @@ class Application:
         self._deinitialize()
         return 0
 
-    def _show_frame_stats(self):
+    def _show_frame_stats(self) -> None:
         if not self._timer.done():
             return
 
@@ -178,7 +178,8 @@ def build_application(config: AppConfig) -> Application:
         layout, game, events, renderer, target_framerate=config.core.target_framerate
     )
 
-def run_benchmark(config) -> int:
+
+def run_benchmark(config: AppConfig) -> int:
     warmup_samples = 5
     steps_per_trial = 100
     trials = 5
@@ -205,9 +206,7 @@ def run_benchmark(config) -> int:
             random.seed(seed_base + trial)
 
             # initialize simulation
-            simulation_core = SimulationCore.from_config(
-                config.simulation.physics
-            )
+            simulation_core = SimulationCore.from_config(config.simulation.physics)
 
             for _ in range(n_entities):
                 pos = pygame.Vector2(
@@ -233,7 +232,7 @@ def run_benchmark(config) -> int:
     sys.stderr.write("\n")
 
     print("entities,min,max,avg")
-    for n,times in results.items():
+    for n, times in results.items():
         print(f"{n},{min(times)},{max(times)},{sum(times)/len(times)}")
 
     return 0
