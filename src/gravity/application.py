@@ -184,7 +184,7 @@ def run_benchmark(config: AppConfig) -> int:
     steps_per_trial = 100
     trials = 5
     seed_base = 12345
-    entity_counts = range(1, 101, 1)
+    entity_counts = range(1, 351, 1)
 
     width = 500
     height = 500
