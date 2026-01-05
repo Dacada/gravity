@@ -1,4 +1,4 @@
-from typing import Any, Iterator, NoReturn
+from typing import Any, Iterator, NoReturn, Optional
 
 class SimulatedEntityHandle:
     def __new__(cls, *args: Any, **kwargs: Any) -> NoReturn: ...
@@ -7,10 +7,11 @@ class SimulatedEntityHandle:
     def __ne__(self, other: Any) -> bool: ...
 
 class MergeInfo:
-    merged: tuple[SimulatedEntityHandle, SimulatedEntityHandle]
-    into: SimulatedEntityHandle
-
     def __new__(cls, *args: Any, **kwargs: Any) -> NoReturn: ...
+    @property
+    def merged(self) -> tuple[SimulatedEntityHandle, SimulatedEntityHandle]: ...
+    @property
+    def into(self) -> SimulatedEntityHandle: ...
 
 class NativeSimulationCore:
     def __init__(
@@ -26,7 +27,7 @@ class NativeSimulationCore:
     def is_handle_valid(self, handle: SimulatedEntityHandle) -> bool: ...
     def get(
         self, handle: SimulatedEntityHandle
-    ) -> tuple[float, float, float, float, float]: ...
+    ) -> Optional[tuple[float, float, float, float, float]]: ...
     def set_position(
         self, handle: SimulatedEntityHandle, x: float, y: float
     ) -> None: ...

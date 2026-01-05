@@ -1,3 +1,4 @@
+#include <stddef.h>
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
@@ -39,26 +40,25 @@ fail:
 //////////////////////////////////////////////////
 
 typedef struct {
-  PyObject_HEAD
-  int slot_idx;
-  int generation;
+  PyObject_HEAD struct gravity_handle handle;
   Py_hash_t hash;
 } SimulatedEntityHandleObject;
 
 static PyTypeObject SimulatedEntityHandleType;
 
 static PyObject *SimulatedEntityHandle_repr(PyObject *obj) {
-  SimulatedEntityHandleObject *self = (SimulatedEntityHandleObject*)obj;
-  return PyUnicode_FromFormat("<SimulatedEntityHandle slot=%d gen=%d>", self->slot_idx, self->generation);
+  SimulatedEntityHandleObject *self = (SimulatedEntityHandleObject *)obj;
+  return PyUnicode_FromFormat("<SimulatedEntityHandle slot=%zu gen=%zu>",
+                              self->handle.slot_idx, self->handle.generation);
 }
 
 static Py_hash_t SimulatedEntityHandle_hash(PyObject *obj) {
-  SimulatedEntityHandleObject *self = (SimulatedEntityHandleObject*)obj;
+  SimulatedEntityHandleObject *self = (SimulatedEntityHandleObject *)obj;
   return self->hash;
 }
 
-static PyObject *SimulatedEntityHandle_richcompare(PyObject *obj,
-                                                    PyObject *oth, int op) {
+static PyObject *SimulatedEntityHandle_richcompare(PyObject *obj, PyObject *oth,
+                                                   int op) {
   if (op != Py_EQ && op != Py_NE) {
     Py_RETURN_NOTIMPLEMENTED;
   }
@@ -69,8 +69,8 @@ static PyObject *SimulatedEntityHandle_richcompare(PyObject *obj,
   SimulatedEntityHandleObject *self = (SimulatedEntityHandleObject *)obj;
   SimulatedEntityHandleObject *other = (SimulatedEntityHandleObject *)oth;
 
-  bool eq = (self->slot_idx == other->slot_idx) &&
-            (self->generation == other->generation);
+  bool eq = (self->handle.slot_idx == other->handle.slot_idx) &&
+            (self->handle.generation == other->handle.generation);
 
   if (op == Py_EQ) {
     return PyBool_FromLong(eq);
@@ -80,52 +80,51 @@ static PyObject *SimulatedEntityHandle_richcompare(PyObject *obj,
 }
 
 static PyTypeObject SimulatedEntityHandleType = {
-  .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
+    .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
 
-  .tp_name = "_core.SimulatedEntityHandle",
-  .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_DISALLOW_INSTANTIATION,
-  .tp_basicsize = sizeof(SimulatedEntityHandleObject),
-  .tp_itemsize = 0,
+                   .tp_name = "_core.SimulatedEntityHandle",
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_DISALLOW_INSTANTIATION,
+    .tp_basicsize = sizeof(SimulatedEntityHandleObject),
+    .tp_itemsize = 0,
 
-  .tp_repr = SimulatedEntityHandle_repr,
-  .tp_hash = SimulatedEntityHandle_hash,
-  .tp_richcompare = SimulatedEntityHandle_richcompare,
+    .tp_repr = SimulatedEntityHandle_repr,
+    .tp_hash = SimulatedEntityHandle_hash,
+    .tp_richcompare = SimulatedEntityHandle_richcompare,
 };
 
-static PyObject *SimulatedEntityHandle_new_internal(int slot_idx, int generation) {
+static PyObject *
+SimulatedEntityHandle_new_internal(struct gravity_handle handle) {
   SimulatedEntityHandleObject *self =
       PyObject_New(SimulatedEntityHandleObject, &SimulatedEntityHandleType);
   if (self == NULL) {
     return NULL;
   }
 
-  Py_hash_t x = (Py_hash_t)slot_idx;
-  Py_hash_t y = (Py_hash_t)generation;
+  Py_hash_t x = (Py_hash_t)handle.slot_idx;
+  Py_hash_t y = (Py_hash_t)handle.generation;
   Py_hash_t hash = x ^ (y + 0x9e3779b9 + (x << 6) + (x >> 2));
 
   if (hash == -1) {
     hash = -2;
   }
 
-  self->slot_idx = slot_idx;
-  self->generation = generation;
+  self->handle = handle;
   self->hash = hash;
 
-  return (PyObject*)self;
+  return (PyObject *)self;
 }
 
 //////////////////////////////////////////////////
 
 typedef struct {
-  PyObject_HEAD
-  PyObject *merged;
+  PyObject_HEAD PyObject *merged;
   PyObject *into;
 } MergeInfoObject;
 
 static PyTypeObject MergeInfoType;
 
 static void MergeInfo_dealloc(PyObject *op) {
-  MergeInfoObject *self = (MergeInfoObject *) op;
+  MergeInfoObject *self = (MergeInfoObject *)op;
   Py_XDECREF(self->merged);
   Py_XDECREF(self->into);
   Py_TYPE(self)->tp_free(self);
@@ -154,16 +153,25 @@ static PyObject *MergeInfo_repr(PyObject *obj) {
   return result;
 }
 
+static PyMemberDef MergeInfo_members[] = {
+    {"merged", Py_T_OBJECT_EX, offsetof(MergeInfoObject, merged), Py_READONLY,
+     NULL},
+    {"into", Py_T_OBJECT_EX, offsetof(MergeInfoObject, into), Py_READONLY,
+     NULL},
+};
+
 static PyTypeObject MergeInfoType = {
-  .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
+    .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
 
-  .tp_name = "_core.MergeInfo",
-  .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_DISALLOW_INSTANTIATION,
-  .tp_basicsize = sizeof(MergeInfoObject),
-  .tp_itemsize = 0,
+                   .tp_name = "_core.MergeInfo",
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_DISALLOW_INSTANTIATION,
+    .tp_basicsize = sizeof(MergeInfoObject),
+    .tp_itemsize = 0,
 
-  .tp_dealloc = MergeInfo_dealloc,
-  .tp_repr = MergeInfo_repr,
+    .tp_dealloc = MergeInfo_dealloc,
+    .tp_repr = MergeInfo_repr,
+
+    .tp_members = MergeInfo_members,
 };
 
 // This function STEALS the passed in references.
@@ -196,57 +204,52 @@ static PyObject *MergeInfo_new_internal(PyObject *merged_handle_1,
   self->merged = tuple;
   self->into = into_handle;
 
-  return (PyObject*)self;
+  return (PyObject *)self;
 }
 
 //////////////////////////////////////////////////
 
 typedef struct {
-  PyObject_HEAD
-  struct gravity gravity;
+  PyObject_HEAD struct gravity gravity;
 } NativeSimulationCoreObject;
 
 static void NativeSimulationCore_dealloc(PyObject *op) {
   NativeSimulationCoreObject *self = (NativeSimulationCoreObject *)op;
-  // TODO: proper destuction
-  // just to show we can own our own memory
-  PyMem_RawFree(self->gravity.foo);
+  gravity_destroy(&self->gravity);
   Py_TYPE(self)->tp_free(self);
 }
 
 static PyObject *NativeSimulationCore_new(PyTypeObject *type, PyObject *args,
-                                    PyObject *kwds) {
+                                          PyObject *kwds) {
   (void)args;
   (void)kwds;
 
   NativeSimulationCoreObject *self;
-  self = (NativeSimulationCoreObject*)type->tp_alloc(type, 0);
+  self = (NativeSimulationCoreObject *)type->tp_alloc(type, 0);
   if (self == NULL) {
     return NULL;
   }
 
-  // TODO: rememebr to first intialize all owned pointers to null to make bailing out easier
+  struct allocator_info alloc = {
+      .malloc = PyMem_RawMalloc,
+      .realloc = PyMem_RawRealloc,
+      .free = PyMem_RawFree,
+  };
+  gravity_init(&self->gravity, alloc);
 
-  // TODO: proper creation
-  // just to show we can own our own memory
-  self->gravity.foo = PyMem_RawMalloc(sizeof(*self->gravity.foo));
-  if (self->gravity.foo == NULL) {
-    Py_DECREF(self);
-    return NULL;
-  }
-
-  return (PyObject *) self;
+  return (PyObject *)self;
 }
 
-static int NativeSimulationCore_init(PyObject *obj, PyObject *args, PyObject *kwargs) {
+static int NativeSimulationCore_init(PyObject *obj, PyObject *args,
+                                     PyObject *kwargs) {
   NativeSimulationCoreObject *self = (NativeSimulationCoreObject *)obj;
 
   static char *kwlist[] = {
-    "gravitational_constant",
-    "softening_factor",
-    "enable_merging",
-    "merge_distance_squared",
-    NULL,
+      "gravitational_constant",
+      "softening_factor",
+      "enable_merging",
+      "merge_distance_squared",
+      NULL,
   };
   double gravitational_constant, softening_factor, merge_distance_squared;
   int enable_merging;
@@ -256,9 +259,8 @@ static int NativeSimulationCore_init(PyObject *obj, PyObject *args, PyObject *kw
     return -1;
   }
 
-  // TODO: proper initialization
-  // just to show we can own our own memory
-  self->gravity.foo[0] = enable_merging;
+  gravity_clear(&self->gravity, gravitational_constant, softening_factor,
+                enable_merging, merge_distance_squared);
 
   return 0;
 }
@@ -266,18 +268,22 @@ static int NativeSimulationCore_init(PyObject *obj, PyObject *args, PyObject *kw
 static PyObject *NativeSimulationCore_create(PyObject *obj, PyObject *args) {
   NativeSimulationCoreObject *self = (NativeSimulationCoreObject *)obj;
 
-  double px, py, vx, vy, mass;
-  if (!PyArg_ParseTuple(args, "ddddd", &px, &py, &vx, &vy, &mass)) {
+  struct gravity_entity e;
+  if (!PyArg_ParseTuple(args, "ddddd", &e.px, &e.py, &e.vx, &e.vy, &e.mass)) {
     return NULL;
   }
 
-  // TODO: implementation
-  (void)self;
+  struct gravity_handle handle;
+  if (gravity_create(&self->gravity, e, &handle) < 0) {
+    PyErr_NoMemory();
+    return NULL;
+  }
 
-  return SimulatedEntityHandle_new_internal(0, 0);
+  return SimulatedEntityHandle_new_internal(handle);
 }
 
-static PyObject *NativeSimulationCore_is_handle_valid(PyObject *obj, PyObject *args) {
+static PyObject *NativeSimulationCore_is_handle_valid(PyObject *obj,
+                                                      PyObject *args) {
   NativeSimulationCoreObject *self = (NativeSimulationCoreObject *)obj;
 
   SimulatedEntityHandleObject *handle;
@@ -285,11 +291,11 @@ static PyObject *NativeSimulationCore_is_handle_valid(PyObject *obj, PyObject *a
     return NULL;
   }
 
-  // TODO: implementation
-  (void)self;
-
-
-  Py_RETURN_FALSE;
+  if (gravity_is_handle_valid(&self->gravity, handle->handle)) {
+    Py_RETURN_TRUE;
+  } else {
+    Py_RETURN_FALSE;
+  }
 }
 
 static PyObject *NativeSimulationCore_get(PyObject *obj, PyObject *args) {
@@ -300,48 +306,46 @@ static PyObject *NativeSimulationCore_get(PyObject *obj, PyObject *args) {
     return NULL;
   }
 
-  // TODO: implementation
-  (void)self;
+  struct gravity_entity e;
+  if (!gravity_get(&self->gravity, handle->handle, &e)) {
+    Py_RETURN_NONE;
+  }
 
-  double px = 0;
-  double py = 0;
-  double vx = 0;
-  double vy = 0;
-  double mass = 0;
-
-  double doubles[] = {px, py, vx, vy, mass};
+  double doubles[] = {e.px, e.py, e.vx, e.vy, e.mass};
   PyObject *objs[5];
   return helper_make_tuple_of_doubles(doubles, objs, 5);
 }
 
-static PyObject *NativeSimulationCore_set_position(PyObject *obj, PyObject *args) {
+static PyObject *NativeSimulationCore_set_position(PyObject *obj,
+                                                   PyObject *args) {
   NativeSimulationCoreObject *self = (NativeSimulationCoreObject *)obj;
 
   SimulatedEntityHandleObject *handle;
   double x;
   double y;
-  if (!PyArg_ParseTuple(args, "O!dd", &SimulatedEntityHandleType, &handle, &x, &y)) {
+  if (!PyArg_ParseTuple(args, "O!dd", &SimulatedEntityHandleType, &handle, &x,
+                        &y)) {
     return NULL;
   }
 
-  // TODO: implementation
-  (void)self;
+  gravity_set_position(&self->gravity, handle->handle, x, y);
 
   Py_RETURN_NONE;
 }
 
-static PyObject *NativeSimulationCore_set_velocity(PyObject *obj, PyObject *args) {
+static PyObject *NativeSimulationCore_set_velocity(PyObject *obj,
+                                                   PyObject *args) {
   NativeSimulationCoreObject *self = (NativeSimulationCoreObject *)obj;
 
   SimulatedEntityHandleObject *handle;
   double x;
   double y;
-  if (!PyArg_ParseTuple(args, "O!dd", &SimulatedEntityHandleType, &handle, &x, &y)) {
+  if (!PyArg_ParseTuple(args, "O!dd", &SimulatedEntityHandleType, &handle, &x,
+                        &y)) {
     return NULL;
   }
 
-  // TODO: implementation
-  (void)self;
+  gravity_set_velocity(&self->gravity, handle->handle, x, y);
 
   Py_RETURN_NONE;
 }
@@ -351,12 +355,12 @@ static PyObject *NativeSimulationCore_set_mass(PyObject *obj, PyObject *args) {
 
   SimulatedEntityHandleObject *handle;
   double mass;
-  if (!PyArg_ParseTuple(args, "O!d", &SimulatedEntityHandleType, &handle, &mass)) {
+  if (!PyArg_ParseTuple(args, "O!d", &SimulatedEntityHandleType, &handle,
+                        &mass)) {
     return NULL;
   }
 
-  // TODO: implementation
-  (void)self;
+  gravity_set_mass(&self->gravity, handle->handle, mass);
 
   Py_RETURN_NONE;
 }
@@ -369,33 +373,29 @@ static PyObject *NativeSimulationCore_delete(PyObject *obj, PyObject *args) {
     return NULL;
   }
 
-  // TODO: implementation
-  (void)self;
+  if (gravity_delete(&self->gravity, handle->handle) < 0) {
+    PyErr_NoMemory();
+    return NULL;
+  }
 
   Py_RETURN_NONE;
 }
 
+static PyObject *
+SimulatedEntityIterator_new_internal(struct gravity_entity_iter, PyObject *);
 static PyObject *NativeSimulationCore_entities_in_rect_iter(PyObject *obj,
                                                             PyObject *args) {
-  NativeSimulationCoreObject *self = (NativeSimulationCoreObject *)obj;
-
   double topleft_x, topleft_y, bottomright_x, bottomright_y;
   if (!PyArg_ParseTuple(args, "dddd", &topleft_x, &topleft_y, &bottomright_x,
                         &bottomright_y)) {
     return NULL;
   }
 
-  // TODO: implementation
-  (void)self;
+  struct gravity_entity_iter iter;
+  gravity_entities_in_rect_iter(topleft_x, topleft_y, bottomright_x,
+                                bottomright_y, &iter);
 
-  // TODO: implement the iterator
-  PyObject *dummy = PyTuple_New(0);
-  if (dummy == NULL) {
-    return NULL;
-  }
-  PyObject *it = PyObject_GetIter(dummy);
-  Py_DECREF(dummy);
-  return it;
+  return SimulatedEntityIterator_new_internal(iter, obj);
 }
 
 static PyObject *NativeSimulationCore_center_of_mass(PyObject *obj,
@@ -403,11 +403,8 @@ static PyObject *NativeSimulationCore_center_of_mass(PyObject *obj,
   NativeSimulationCoreObject *self = (NativeSimulationCoreObject *)obj;
   (void)unused;
 
-  // TODO: implementation
-  (void)self;
-
-  double x = 0;
-  double y = 0;
+  double x, y;
+  gravity_center_of_mass(&self->gravity, &x, &y);
 
   double doubles[] = {x, y};
   PyObject *objs[2];
@@ -422,11 +419,59 @@ static PyObject *NativeSimulationCore_update(PyObject *obj, PyObject *args) {
     return NULL;
   }
 
-  // TODO: implementation
-  (void)self;
+  struct gravity_merge_info info;
+  if (gravity_update(&self->gravity, dt, &info) < 0) {
+    gravity_merge_info_destroy(&self->gravity, &info);
+    PyErr_NoMemory();
+    return NULL;
+  }
 
-  PyObject *list = PyList_New(0);
+  PyObject *list = PyList_New(info.nmerges);
+  if (list == NULL) {
+    goto fail;
+  }
+
+  size_t i;
+  for (i = 0; i < info.nmerges; i++) {
+    struct gravity_handle merge1 = info.merge1[i];
+    struct gravity_handle merge2 = info.merge2[i];
+    struct gravity_handle into = info.into[i];
+
+    PyObject *merge1_obj = SimulatedEntityHandle_new_internal(merge1);
+    if (merge1_obj == NULL) {
+      goto fail;
+    }
+    PyObject *merge2_obj = SimulatedEntityHandle_new_internal(merge2);
+    if (merge2_obj == NULL) {
+      Py_DECREF(merge1_obj);
+      goto fail;
+    }
+    PyObject *into_obj = SimulatedEntityHandle_new_internal(into);
+    if (into_obj == NULL) {
+      Py_DECREF(merge1_obj);
+      Py_DECREF(merge2_obj);
+      goto fail;
+    }
+
+    PyObject *merge_info =
+        MergeInfo_new_internal(merge1_obj, merge2_obj, into_obj);
+    if (merge_info == NULL) {
+      Py_DECREF(merge1_obj);
+      Py_DECREF(merge2_obj);
+      Py_DECREF(into_obj);
+      goto fail;
+    }
+
+    PyList_SET_ITEM(list, i, merge_info);
+  }
+
+  gravity_merge_info_destroy(&self->gravity, &info);
   return list;
+
+fail:
+  gravity_merge_info_destroy(&self->gravity, &info);
+  Py_DECREF(list);
+  return NULL;
 }
 
 static PyMethodDef NativeSimulationCore_methods[] = {
@@ -446,18 +491,77 @@ static PyMethodDef NativeSimulationCore_methods[] = {
 };
 
 static PyTypeObject NativeSimulationCoreType = {
-  .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
+    .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
 
-  .tp_name = "_core.NativeSimulationCore",
-  .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-  .tp_basicsize = sizeof(NativeSimulationCoreObject),
-  .tp_itemsize = 0,
+                   .tp_name = "_core.NativeSimulationCore",
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_basicsize = sizeof(NativeSimulationCoreObject),
+    .tp_itemsize = 0,
 
-  .tp_dealloc = NativeSimulationCore_dealloc,
-  .tp_new = NativeSimulationCore_new,
-  .tp_init = NativeSimulationCore_init,
-  .tp_methods = NativeSimulationCore_methods,
+    .tp_dealloc = NativeSimulationCore_dealloc,
+    .tp_new = NativeSimulationCore_new,
+    .tp_init = NativeSimulationCore_init,
+    .tp_methods = NativeSimulationCore_methods,
 };
+
+//////////////////////////////////////////////////
+
+typedef struct {
+  PyObject_HEAD PyObject *core;
+  struct gravity_entity_iter iter;
+} SimulatedEntityIteratorObject;
+
+static void SimulatedEntityIterator_dealloc(PyObject *obj) {
+  SimulatedEntityIteratorObject *self = (SimulatedEntityIteratorObject *)obj;
+  Py_XDECREF(self->core);
+  Py_TYPE(self)->tp_free(self);
+}
+
+static PyObject *SimulatedEntityIterator_iter(PyObject *self) {
+  Py_INCREF(self);
+  return self;
+}
+
+static PyObject *SimulatedEntityIterator_iternext(PyObject *obj) {
+  SimulatedEntityIteratorObject *self = (SimulatedEntityIteratorObject *)obj;
+  NativeSimulationCoreObject *core_obj =
+      (NativeSimulationCoreObject *)self->core;
+
+  struct gravity_handle h;
+  if (!gravity_entity_iter_next(&core_obj->gravity, &self->iter, &h)) {
+    PyErr_SetNone(PyExc_StopIteration);
+    return NULL;
+  }
+
+  return SimulatedEntityHandle_new_internal(h);
+}
+
+static PyTypeObject SimulatedEntityIteratorType = {
+    .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
+
+                   .tp_name = "_core.SimulatedEntityIterator",
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_DISALLOW_INSTANTIATION,
+    .tp_basicsize = sizeof(SimulatedEntityIteratorObject),
+    .tp_itemsize = 0,
+
+    .tp_dealloc = SimulatedEntityIterator_dealloc,
+    .tp_iter = SimulatedEntityIterator_iter,
+    .tp_iternext = SimulatedEntityIterator_iternext,
+};
+
+static PyObject *
+SimulatedEntityIterator_new_internal(struct gravity_entity_iter iter,
+                                     PyObject *core_obj) {
+  SimulatedEntityIteratorObject *self =
+      PyObject_New(SimulatedEntityIteratorObject, &SimulatedEntityIteratorType);
+  if (self == NULL) {
+    return NULL;
+  }
+  self->iter = iter;
+  Py_INCREF(core_obj);
+  self->core = core_obj;
+  return (PyObject *)self;
+}
 
 //////////////////////////////////////////////////
 
@@ -468,6 +572,9 @@ static int _core_module_exec(PyObject *m) {
   if (PyType_Ready(&MergeInfoType) < 0) {
     return -1;
   }
+  if (PyType_Ready(&SimulatedEntityIteratorType) < 0) {
+    return -1;
+  }
   if (PyType_Ready(&NativeSimulationCoreType) < 0) {
     return -1;
   }
@@ -476,8 +583,7 @@ static int _core_module_exec(PyObject *m) {
                             (PyObject *)&SimulatedEntityHandleType) < 0) {
     return -1;
   }
-  if (PyModule_AddObjectRef(m, "MergeInfo",
-                            (PyObject *)&MergeInfoType) < 0) {
+  if (PyModule_AddObjectRef(m, "MergeInfo", (PyObject *)&MergeInfoType) < 0) {
     return -1;
   }
   if (PyModule_AddObjectRef(m, "NativeSimulationCore",
@@ -505,5 +611,5 @@ static struct PyModuleDef _core_module = {
 #pragma GCC diagnostic ignored "-Wmissing-prototypes"
 PyMODINIT_FUNC PyInit__core(void) {
 #pragma GCC diagnostic pop
-    return PyModuleDef_Init(&_core_module);
+  return PyModuleDef_Init(&_core_module);
 }

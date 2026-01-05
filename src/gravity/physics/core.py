@@ -42,6 +42,9 @@ class SimulationCore(NativeSimulationCore):
     def entities_in_rect_iter(  # type: ignore[override]
         self, topleft: pygame.Vector2, bottomright: pygame.Vector2
     ) -> Iterator[SimulatedEntityHandle]:
+        """
+        NOTE: mutating the object during iteration will RESULT IN UNDEFINED BEHAVIOR AT THE C LAYER
+        """
         return super().entities_in_rect_iter(
             topleft.x, topleft.y, bottomright.x, bottomright.y
         )

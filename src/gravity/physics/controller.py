@@ -4,12 +4,8 @@ from typing import Iterator, Optional, Self
 import pygame
 
 from gravity.config.schema import AppConfigSimulationControl, AppConfigSimulationModel
-from gravity.physics import (
-    MergeInfo,
-    SimulatedEntity,
-    SimulatedEntityHandle,
-    SimulationCore,
-)
+from gravity.physics.core import MergeInfo, SimulatedEntityHandle, SimulationCore
+from gravity.physics.model import SimulatedEntity
 from gravity.types import Color
 
 
