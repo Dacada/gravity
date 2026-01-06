@@ -2,7 +2,7 @@ from typing import Self
 
 import pygame
 
-from gravity.config.schema import AppConfigCamera
+from gravity.config.schema.camera import Camera as CameraConfig
 from gravity.layout import Layout
 
 
@@ -16,7 +16,7 @@ class Camera:
         self._zoom = 1.0
 
     @classmethod
-    def from_config(cls, cfg: AppConfigCamera, layout: Layout) -> Self:
+    def from_config(cls, cfg: CameraConfig, layout: Layout) -> Self:
         return cls(
             layout,
             cfg.pan_speed,

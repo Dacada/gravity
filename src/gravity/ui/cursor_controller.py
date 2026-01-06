@@ -4,7 +4,7 @@ from typing import Optional, Self
 import pygame
 
 from gravity.camera import Camera
-from gravity.config.schema import AppConfigCursorUi
+from gravity.config.schema.ui import Cursor as CursorConfig
 from gravity.layout import Layout
 from gravity.physics import SimulatedEntityHandle, SimulationController
 
@@ -21,7 +21,7 @@ class CursorUIController:
         self._selection_distance_squared = selection_distance_squared
 
     @classmethod
-    def from_config(cls, cfg: AppConfigCursorUi, layout: Layout) -> Self:
+    def from_config(cls, cfg: CursorConfig, layout: Layout) -> Self:
         return cls(
             layout,
             cfg.viewport_clickable_margin,

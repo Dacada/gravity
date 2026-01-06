@@ -3,7 +3,8 @@ from typing import Self
 
 import pygame
 
-from gravity.config.schema import AppConfigLayout, AppConfigLayoutIcon
+from gravity.config.schema.layout import Icon as LayoutIconConfig
+from gravity.config.schema.layout import Layout as LayoutConfig
 from gravity.types import AnchorType
 
 
@@ -14,7 +15,7 @@ class LayoutIcon:
     anchor: AnchorType
 
     @classmethod
-    def from_config(cls, cfg: AppConfigLayoutIcon) -> Self:
+    def from_config(cls, cfg: LayoutIconConfig) -> Self:
         return cls(
             pygame.Vector2(cfg.offset_ratio), pygame.Vector2(cfg.size), cfg.anchor
         )
@@ -45,7 +46,7 @@ class Layout:
         self._recalculate()
 
     @classmethod
-    def from_config(cls, cfg: AppConfigLayout) -> Self:
+    def from_config(cls, cfg: LayoutConfig) -> Self:
         return cls(
             cfg.width,
             cfg.height,

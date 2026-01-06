@@ -4,7 +4,7 @@ import sys
 import time
 from collections import defaultdict, deque
 from contextlib import contextmanager
-from typing import Iterator, Optional
+from typing import Iterator
 
 import pygame
 
@@ -155,12 +155,12 @@ def build_application(config: AppConfig) -> Application:
         simulation_entity_descriptor,
     )
 
-    inspector = InspectorUIState.from_config(config.ui_format)
+    inspector = InspectorUIState.from_config(config.ui.format)
     camera = Camera.from_config(config.camera, layout)
 
     camera_controller = CameraController()
-    pause_controller = PauseController.from_config(config.pause_animation)
-    cursor_ui_controller = CursorUIController.from_config(config.cursor_ui, layout)
+    pause_controller = PauseController.from_config(config.ui.pause_animation)
+    cursor_ui_controller = CursorUIController.from_config(config.ui.cursor, layout)
 
     renderer = Renderer.from_config(config.render, layout)
 

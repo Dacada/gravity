@@ -2,13 +2,13 @@ from typing import Iterator, Optional, Self
 
 import pygame
 
-from gravity.config.schema import AppConfigSimulationPhysics
+from gravity.config.schema.simulation import Physics as PhysicsConfig
 from gravity.physics._core import MergeInfo, NativeSimulationCore, SimulatedEntityHandle
 
 
 class SimulationCore(NativeSimulationCore):
     @classmethod
-    def from_config(cls, cfg: AppConfigSimulationPhysics) -> Self:
+    def from_config(cls, cfg: PhysicsConfig) -> Self:
         return cls(
             cfg.gravitational_constant,
             cfg.softening_factor,

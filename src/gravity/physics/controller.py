@@ -3,8 +3,10 @@ from typing import Iterator, Optional, Self
 
 import pygame
 
-from gravity.config.schema import AppConfigSimulationControl, AppConfigSimulationModel
-from gravity.physics.core import MergeInfo, SimulatedEntityHandle, SimulationCore
+from gravity.config.schema.simulation import Control as ControlConfig
+from gravity.config.schema.simulation import Model as ModelConfig
+from gravity.physics._core import MergeInfo, SimulatedEntityHandle
+from gravity.physics.core import SimulationCore
 from gravity.physics.model import SimulatedEntity
 from gravity.types import Color
 
@@ -20,6 +22,12 @@ class SimulationEntityDescriptor:
     def __init__(self, default_simulated_entity_color: Color):
         self._default_simulated_entity_color = default_simulated_entity_color
         self._descriptions: dict[SimulatedEntityHandle, _EntityDescription] = {}
+
+    @classmethod
+    def from_config(cls, cfg: ModelConfig) -> Self:
+        return cls(
+            cfg.default_simulated_entity_color,
+        )
 
     def create(
         self,
@@ -112,12 +120,6 @@ class SimulationEntityDescriptor:
         if descr is None:
             return
         descr.color = color
-
-    @classmethod
-    def from_config(cls, cfg: AppConfigSimulationModel) -> Self:
-        return cls(
-            cfg.default_simulated_entity_color,
-        )
 
 
 @dataclass
@@ -249,7 +251,7 @@ class SimulationController:
     @classmethod
     def from_config(
         cls,
-        cfg: AppConfigSimulationControl,
+        cfg: ControlConfig,
         simulation_core: SimulationCore,
         simulation_entity_descriptor: SimulationEntityDescriptor,
     ) -> Self:

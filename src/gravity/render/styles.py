@@ -5,16 +5,8 @@ from typing import Self, TypedDict, Unpack
 
 import pygame
 
-from gravity.config.schema import (
-    AppConfigRenderStyleComIcon,
-    AppConfigRenderStyleFreeCamIcon,
-    AppConfigRenderStyleInspector,
-    AppConfigRenderStyleName,
-    AppConfigRenderStylePauseIcon,
-    AppConfigRenderStyles,
-    AppConfigRenderStyleSimulatedEntity,
-    AppConfigRenderStyleTargetIcon,
-)
+from gravity.config.schema import render_styles
+from gravity.config.schema.render import Styles as RenderStyles
 from gravity.types import Color
 
 
@@ -39,7 +31,7 @@ class PauseIconStyle(IconStyle):
     gap: int
 
     @classmethod
-    def from_config(cls, cfg: AppConfigRenderStylePauseIcon) -> Self:
+    def from_config(cls, cfg: render_styles.PauseIcon) -> Self:
         return cls(
             Color(*cfg.color),
             cfg.bar_width,
@@ -72,7 +64,7 @@ class TargetIconStyle(IconStyle):
     corner_thickness: int
 
     @classmethod
-    def from_config(cls, cfg: AppConfigRenderStyleTargetIcon) -> Self:
+    def from_config(cls, cfg: render_styles.TargetIcon) -> Self:
         return cls(
             Color(*cfg.color),
             cfg.size,
@@ -130,7 +122,7 @@ class CenterOfMassRingIconStyle(IconStyle):
     dot_count: int
 
     @classmethod
-    def from_config(cls, cfg: AppConfigRenderStyleComIcon) -> Self:
+    def from_config(cls, cfg: render_styles.ComIcon) -> Self:
         return cls(
             Color(*cfg.color),
             cfg.center_radius,
@@ -169,7 +161,7 @@ class FreeCamIconStyle(IconStyle):
     line_width: int
 
     @classmethod
-    def from_config(cls, cfg: AppConfigRenderStyleFreeCamIcon) -> Self:
+    def from_config(cls, cfg: render_styles.FreeCamIcon) -> Self:
         return cls(
             Color(*cfg.color),
             cfg.tri_size,
@@ -243,7 +235,7 @@ class InspectorStyle:
     control_separation: int
 
     @classmethod
-    def from_config(cls, cfg: AppConfigRenderStyleInspector) -> Self:
+    def from_config(cls, cfg: render_styles.Inspector) -> Self:
         return cls(
             Color(*cfg.bg_color),
             Color(*cfg.border_color),
@@ -261,7 +253,7 @@ class SimulatedEntityStyle:
     reticle_color: Color
 
     @classmethod
-    def from_config(cls, cfg: AppConfigRenderStyleSimulatedEntity) -> Self:
+    def from_config(cls, cfg: render_styles.SimulatedEntity) -> Self:
         return cls(
             cfg.radius,
             cfg.reticle_padding,
@@ -276,7 +268,7 @@ class NameStyle:
     horizontal_length: int
 
     @classmethod
-    def from_config(cls, cfg: AppConfigRenderStyleName) -> Self:
+    def from_config(cls, cfg: render_styles.Name) -> Self:
         return cls(
             cfg.diagonal_length,
             cfg.horizontal_length,
@@ -294,7 +286,7 @@ class RenderStyle:
     name: NameStyle
 
     @classmethod
-    def from_config(cls, cfg: AppConfigRenderStyles) -> Self:
+    def from_config(cls, cfg: RenderStyles) -> Self:
         return cls(
             PauseIconStyle.from_config(cfg.pause_icon),
             TargetIconStyle.from_config(cfg.target_icon),

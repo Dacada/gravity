@@ -24,6 +24,7 @@ setup(
         "gravity",
         "gravity.camera",
         "gravity.config",
+        "gravity.config.schema",
         "gravity.core",
         "gravity.physics",
         "gravity.render",

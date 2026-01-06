@@ -32,21 +32,23 @@
             "merge_distance_squared": 0.01
         }
     },
-    "ui_format": {
-        "position_format": ".3f",
-        "velocity_format": ".3f",
-        "mass_format": ".3f"
+    "ui": {
+        "format": {
+            "position_format": ".3f",
+            "velocity_format": ".3f",
+            "mass_format": ".3f"
+        },
+        "cursor": {
+            "viewport_clickable_margin": 5,
+            "selection_distance_squared": 20
+        },
+        "pause_animation": {
+            "speed": 2.5
+        }
     },
     "camera": {
         "pan_speed": 100.0,
         "zoom_factor": 1.5
-    },
-    "pause_animation": {
-        "speed": 2.5
-    },
-    "cursor_ui": {
-        "viewport_clickable_margin": 5,
-        "selection_distance_squared": 20
     },
     "render": {
         "styles": {

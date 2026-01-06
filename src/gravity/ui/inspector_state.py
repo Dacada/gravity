@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Callable, Optional, Protocol, Self
 
-from gravity.config.schema import AppConfigUiFormat
+from gravity.config.schema.ui import Format as FormatConfig
 from gravity.physics import SimulatedEntity, SimulatedEntityHandle, SimulationController
 from gravity.types import Color
 
@@ -85,7 +85,7 @@ class InspectorUIState:
         self._typing = ""
 
     @classmethod
-    def from_config(cls, cfg: AppConfigUiFormat) -> Self:
+    def from_config(cls, cfg: FormatConfig) -> Self:
         return cls(
             _make_formatter(cfg.position_format),
             _make_formatter(cfg.velocity_format),

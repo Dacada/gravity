@@ -3,7 +3,7 @@ from typing import Optional, Self
 import pygame
 
 from gravity.camera import Camera, CameraController
-from gravity.config.schema import AppConfigRender
+from gravity.config.schema.render import Render as RenderConfig
 from gravity.core import GameState
 from gravity.layout import Layout
 from gravity.physics import SimulatedEntity, SimulatedEntityHandle, SimulationController
@@ -31,7 +31,7 @@ class Renderer:
         return self._font_optional
 
     @classmethod
-    def from_config(cls, cfg: AppConfigRender, layout: Layout) -> Self:
+    def from_config(cls, cfg: RenderConfig, layout: Layout) -> Self:
         return cls(
             layout, RenderStyle.from_config(cfg.styles), cfg.font_name, cfg.font_size
         )
