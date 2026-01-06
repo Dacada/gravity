@@ -92,7 +92,7 @@ class Application:
         # temp, for quickly setting up a test state
         w = 300
         h = 300
-        for i in range(75):
+        for i in range(275):
             self._game.simulation.create(
                 pos=pygame.Vector2(
                     random.uniform(-w // 2, w // 2),
