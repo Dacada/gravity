@@ -9,7 +9,29 @@ class LiteralProperty(BaseModel):
     value: float
 
 
-Property = Annotated[Union[LiteralProperty], Field(discriminator="type")]
+class GaussProperty(BaseModel):
+    type: Literal["gaussian"]
+    mean: float
+    sigma: float
+
+
+class GaussAbsoluteProperty(BaseModel):
+    type: Literal["gaussian-absolute"]
+    mean: float
+    sigma: float
+
+
+Property = Annotated[Union[LiteralProperty, GaussProperty, GaussAbsoluteProperty], Field(discriminator="type")]
+
+
+class BoxRegion(BaseModel):
+    shape: Literal["box"]
+    disorder: float
+    width: float
+    height: float
+
+
+Region = Annotated[Union[BoxRegion], Field(discriminator="shape")]
 
 
 class SimpleEntity(BaseModel):
@@ -22,7 +44,17 @@ class SystemEntity(BaseModel):
     system: "System"
 
 
-Entity = Annotated[Union[SimpleEntity, SystemEntity], Field(discriminator="type")]
+class CloudEntity(BaseModel):
+    type: Literal["cloud"]
+    count: int
+    region: Region
+    mass: Property
+    velocity: tuple[Property, Property]
+
+
+Entity = Annotated[
+    Union[SimpleEntity, SystemEntity, CloudEntity], Field(discriminator="type")
+]
 
 
 class EntityInstance(BaseModel):
@@ -36,5 +68,5 @@ class System(BaseModel):
 
 
 class InitialConditions(BaseModel):
-    root: SystemEntity
+    root: System
     seed: Optional[int]

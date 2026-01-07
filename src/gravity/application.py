@@ -162,7 +162,9 @@ def build_application(config: AppConfig) -> Application:
 
     renderer = Renderer.from_config(config.render, layout)
 
-    initial_conditions = InitialConditions.from_config(config.simulation.initial_conditions)
+    initial_conditions = InitialConditions.from_config(
+        config.simulation.initial_conditions
+    )
 
     game = GameState(
         simulation,
