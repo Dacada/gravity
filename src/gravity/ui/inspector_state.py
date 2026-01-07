@@ -64,6 +64,13 @@ def _make_formatter(format_spec: str) -> Callable[[Any], str]:
     return formatter
 
 
+def _mass_parser(mass: str) -> float:
+    m = float(mass)
+    if m <= 0:
+        raise ValueError("invalid nonpositive mass")
+    return m
+
+
 class InspectorUIState:
     def __init__(
         self,
@@ -78,7 +85,7 @@ class InspectorUIState:
             InspectorUIControlState("Y Pos", "y", float, position_value_formatter),
             InspectorUIControlState("X Vel", "vx", float, velocity_value_formatter),
             InspectorUIControlState("Y Vel", "vy", float, velocity_value_formatter),
-            InspectorUIControlState("Mass", "mass", float, mass_value_formatter),
+            InspectorUIControlState("Mass", "mass", _mass_parser, mass_value_formatter),
         ]
         self._selected_entity: Optional[SimulatedEntityHandle] = None
         self._current_idx = 0

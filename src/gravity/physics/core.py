@@ -17,6 +17,8 @@ class SimulationCore(NativeSimulationCore):
         )
 
     def create(self, pos: pygame.Vector2, vel: pygame.Vector2, mass: float) -> SimulatedEntityHandle:  # type: ignore[override]
+        if mass <= 0:
+            raise ValueError("invalid nonpositive mass")
         return super().create(pos.x, pos.y, vel.x, vel.y, mass)
 
     def get(  # type: ignore[override]
