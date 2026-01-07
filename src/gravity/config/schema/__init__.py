@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from gravity.config.schema import (
     camera,
     core,
+    initial_conditions,
     layout,
     render,
     render_styles,
@@ -24,6 +25,7 @@ __all__ = [
     "AppConfig",
     "camera",
     "core",
+    "initial_conditions",
     "layout",
     "render",
     "render_styles",

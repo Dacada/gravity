@@ -1,6 +1,9 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 from gravity.config.parse import RationalFloat
+from gravity.config.schema.initial_conditions import InitialConditions
 from gravity.types import Color
 
 
@@ -24,3 +27,4 @@ class Simulation(BaseModel):
     control: Control
     model: Model
     physics: Physics
+    initial_conditions: Optional[InitialConditions]

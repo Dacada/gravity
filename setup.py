@@ -26,6 +26,7 @@ setup(
         "gravity.config",
         "gravity.config.schema",
         "gravity.core",
+        "gravity.initial_conditions",
         "gravity.physics",
         "gravity.render",
         "gravity.ui",

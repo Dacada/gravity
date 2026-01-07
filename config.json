@@ -30,7 +30,8 @@
             "softening_factor": 1.0,
             "enable_merging": false,
             "merge_distance_squared": 0.01
-        }
+        },
+        "initial_conditions": null
     },
     "ui": {
         "format": {

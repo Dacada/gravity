@@ -11,6 +11,7 @@ import pygame
 from gravity.camera import Camera, CameraController
 from gravity.config import AppConfig
 from gravity.core import EventHandler, GameState
+from gravity.initial_conditions import InitialConditions
 from gravity.layout import Layout
 from gravity.physics import (
     SimulationController,
@@ -71,6 +72,7 @@ class Application:
         game: GameState,
         events: EventHandler,
         renderer: Renderer,
+        initial_conditions: InitialConditions,
         target_framerate: int,
     ):
         self._target_framerate = target_framerate
@@ -78,6 +80,7 @@ class Application:
         self._game = game
         self._events = events
         self._renderer = renderer
+        self._initial_conditions = initial_conditions
 
         self._timer = _Timer(100)
 
@@ -89,16 +92,11 @@ class Application:
         pygame.display.set_caption("Gravity")
         self._renderer.initialize()
 
-        # temp, for quickly setting up a test state
-        w = 300
-        h = 300
-        for i in range(275):
+        for entity in self._initial_conditions.compute_all_entities():
             self._game.simulation.create(
-                pos=pygame.Vector2(
-                    random.uniform(-w // 2, w // 2),
-                    random.uniform(-h // 2, h // 2),
-                ),
-                mass=abs(random.gauss(mu=0, sigma=1)),
+                pos=entity.pos,
+                vel=entity.vel,
+                mass=entity.mass,
             )
 
     def _deinitialize(self) -> None:
@@ -164,6 +162,8 @@ def build_application(config: AppConfig) -> Application:
 
     renderer = Renderer.from_config(config.render, layout)
 
+    initial_conditions = InitialConditions.from_config(config.simulation.initial_conditions)
+
     game = GameState(
         simulation,
         inspector,
@@ -175,7 +175,12 @@ def build_application(config: AppConfig) -> Application:
     events = EventHandler(game, layout)
 
     return Application(
-        layout, game, events, renderer, target_framerate=config.core.target_framerate
+        layout,
+        game,
+        events,
+        renderer,
+        initial_conditions,
+        target_framerate=config.core.target_framerate,
     )
 
 
