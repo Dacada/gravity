@@ -235,11 +235,13 @@ class SimulationController:
         simulation_core: SimulationCore,
         simulation_entity_descriptor: SimulationEntityDescriptor,
         physics_timedelta: float,
+        time_scale: float,
         physics_step_alloted_time_clamp: float,
     ):
         self._simulation_core = simulation_core
         self._simulation_entity_descriptor = simulation_entity_descriptor
         self._simulation_entity_order_controller = SimulationEntityOrderController()
+        self._time_scale = time_scale
         self._simulation_entity_counter = SimulationEntityCounter()
 
         self._physics_loop_accumulator = 0.0
@@ -259,6 +261,7 @@ class SimulationController:
             simulation_core,
             simulation_entity_descriptor,
             cfg.physics_timedelta,
+            cfg.time_scale,
             cfg.physics_step_alloted_time_clamp,
         )
 
@@ -341,7 +344,7 @@ class SimulationController:
 
         merges: list[MergeInfo] = []
 
-        self._physics_loop_accumulator += dt
+        self._physics_loop_accumulator += dt * self._time_scale
         while self._physics_loop_accumulator >= self._physics_timedelta:
             merges.extend(self._simulation_core.update(self._physics_timedelta))
             self._physics_loop_accumulator -= self._physics_timedelta

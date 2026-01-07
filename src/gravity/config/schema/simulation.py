@@ -9,6 +9,7 @@ from gravity.types import Color
 
 class Control(BaseModel):
     physics_timedelta: RationalFloat
+    time_scale: RationalFloat
     physics_step_alloted_time_clamp: RationalFloat
 
 

@@ -20,7 +20,8 @@
     "simulation": {
         "control": {
             "physics_timedelta": { "ratio": "1/500" },
-            "physics_step_alloted_time_clamp": 0.25
+            "physics_step_alloted_time_clamp": 0.25,
+            "time_scale": 50
         },
         "model": {
             "default_simulated_entity_color": [255, 255, 255]
