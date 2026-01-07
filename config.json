@@ -26,8 +26,8 @@
             "default_simulated_entity_color": [255, 255, 255]
         },
         "physics": {
-            "gravitational_constant": 100.0,
-            "softening_factor": 1.0,
+            "gravitational_constant": 10.0,
+            "softening_factor": 0,
             "enable_merging": false,
             "merge_distance_squared": 0.01
         },
@@ -37,29 +37,817 @@
                 "entities": [
                     {
                         "entity": {
-                            "type": "cloud",
-                            "count": 256,
-                            "region": {
-                                "shape": "box",
-                                "disorder": 0.5,
-                                "width": 500,
-                                "height": 500
-                            },
-                            "mass": {
-                                "type": "gaussian-absolute",
-                                "mean": 5,
-                                "sigma": 10
-                            },
-                            "velocity": [
-                                {
+                            "type": "binary",
+                            "primary": {
+                                "type": "binary",
+                                "primary": {
+                                    "type": "binary",
+                                    "primary": {
+                                        "type": "binary",
+                                        "primary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "secondary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "semi_major_axis": {
+                                            "type": "literal",
+                                            "value": 4
+                                        },
+                                        "eccentricity": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "phase": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "orientation": {
+                                            "type": "literal",
+                                            "value": 0
+                                        }
+                                    },
+                                    "secondary": {
+                                        "type": "binary",
+                                        "primary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "secondary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "semi_major_axis": {
+                                            "type": "literal",
+                                            "value": 4
+                                        },
+                                        "eccentricity": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "phase": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "orientation": {
+                                            "type": "literal",
+                                            "value": 0
+                                        }
+                                    },
+                                    "semi_major_axis": {
+                                        "type": "literal",
+                                        "value": 16
+                                    },
+                                    "eccentricity": {
+                                        "type": "literal",
+                                        "value": 0
+                                    },
+                                    "phase": {
+                                        "type": "literal",
+                                        "value": 0
+                                    },
+                                    "orientation": {
+                                        "type": "literal",
+                                        "value": 0
+                                    }
+                                },
+                                "secondary": {
+                                    "type": "binary",
+                                    "primary": {
+                                        "type": "binary",
+                                        "primary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "secondary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "semi_major_axis": {
+                                            "type": "literal",
+                                            "value": 4
+                                        },
+                                        "eccentricity": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "phase": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "orientation": {
+                                            "type": "literal",
+                                            "value": 0
+                                        }
+                                    },
+                                    "secondary": {
+                                        "type": "binary",
+                                        "primary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "secondary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "semi_major_axis": {
+                                            "type": "literal",
+                                            "value": 4
+                                        },
+                                        "eccentricity": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "phase": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "orientation": {
+                                            "type": "literal",
+                                            "value": 0
+                                        }
+                                    },
+                                    "semi_major_axis": {
+                                        "type": "literal",
+                                        "value": 16
+                                    },
+                                    "eccentricity": {
+                                        "type": "literal",
+                                        "value": 0
+                                    },
+                                    "phase": {
+                                        "type": "literal",
+                                        "value": 0
+                                    },
+                                    "orientation": {
+                                        "type": "literal",
+                                        "value": 0
+                                    }
+                                },
+                                "semi_major_axis": {
+                                    "type": "literal",
+                                    "value": 64
+                                },
+                                "eccentricity": {
                                     "type": "literal",
                                     "value": 0
                                 },
-                                {
+                                "phase": {
+                                    "type": "literal",
+                                    "value": 0
+                                },
+                                "orientation": {
                                     "type": "literal",
                                     "value": 0
                                 }
-                            ]
+                            },
+                            "secondary": {
+                                "type": "binary",
+                                "primary": {
+                                    "type": "binary",
+                                    "primary": {
+                                        "type": "binary",
+                                        "primary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "secondary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "semi_major_axis": {
+                                            "type": "literal",
+                                            "value": 4
+                                        },
+                                        "eccentricity": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "phase": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "orientation": {
+                                            "type": "literal",
+                                            "value": 0
+                                        }
+                                    },
+                                    "secondary": {
+                                        "type": "binary",
+                                        "primary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "secondary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "semi_major_axis": {
+                                            "type": "literal",
+                                            "value": 4
+                                        },
+                                        "eccentricity": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "phase": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "orientation": {
+                                            "type": "literal",
+                                            "value": 0
+                                        }
+                                    },
+                                    "semi_major_axis": {
+                                        "type": "literal",
+                                        "value": 16
+                                    },
+                                    "eccentricity": {
+                                        "type": "literal",
+                                        "value": 0
+                                    },
+                                    "phase": {
+                                        "type": "literal",
+                                        "value": 0
+                                    },
+                                    "orientation": {
+                                        "type": "literal",
+                                        "value": 0
+                                    }
+                                },
+                                "secondary": {
+                                    "type": "binary",
+                                    "primary": {
+                                        "type": "binary",
+                                        "primary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "secondary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "semi_major_axis": {
+                                            "type": "literal",
+                                            "value": 4
+                                        },
+                                        "eccentricity": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "phase": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "orientation": {
+                                            "type": "literal",
+                                            "value": 0
+                                        }
+                                    },
+                                    "secondary": {
+                                        "type": "binary",
+                                        "primary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "secondary": {
+                                            "type": "binary",
+                                            "primary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "secondary": {
+                                                "type": "simple",
+                                                "mass": {
+                                                    "type": "literal",
+                                                    "value": 1
+                                                }
+                                            },
+                                            "semi_major_axis": {
+                                                "type": "literal",
+                                                "value": 1
+                                            },
+                                            "eccentricity": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "phase": {
+                                                "type": "literal",
+                                                "value": 0
+                                            },
+                                            "orientation": {
+                                                "type": "literal",
+                                                "value": 0
+                                            }
+                                        },
+                                        "semi_major_axis": {
+                                            "type": "literal",
+                                            "value": 4
+                                        },
+                                        "eccentricity": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "phase": {
+                                            "type": "literal",
+                                            "value": 0
+                                        },
+                                        "orientation": {
+                                            "type": "literal",
+                                            "value": 0
+                                        }
+                                    },
+                                    "semi_major_axis": {
+                                        "type": "literal",
+                                        "value": 16
+                                    },
+                                    "eccentricity": {
+                                        "type": "literal",
+                                        "value": 0
+                                    },
+                                    "phase": {
+                                        "type": "literal",
+                                        "value": 0
+                                    },
+                                    "orientation": {
+                                        "type": "literal",
+                                        "value": 0
+                                    }
+                                },
+                                "semi_major_axis": {
+                                    "type": "literal",
+                                    "value": 64
+                                },
+                                "eccentricity": {
+                                    "type": "literal",
+                                    "value": 0
+                                },
+                                "phase": {
+                                    "type": "literal",
+                                    "value": 0
+                                },
+                                "orientation": {
+                                    "type": "literal",
+                                    "value": 0
+                                }
+                            },
+                            "semi_major_axis": {
+                                "type": "literal",
+                                "value": 256
+                            },
+                            "eccentricity": {
+                                "type": "literal",
+                                "value": 0
+                            },
+                            "phase": {
+                                "type": "literal",
+                                "value": 0
+                            },
+                            "orientation": {
+                                "type": "literal",
+                                "value": 0
+                            }
                         },
                         "position": [
                             {

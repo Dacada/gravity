@@ -21,7 +21,16 @@ class GaussAbsoluteProperty(BaseModel):
     sigma: float
 
 
-Property = Annotated[Union[LiteralProperty, GaussProperty, GaussAbsoluteProperty], Field(discriminator="type")]
+class UniformProperty(BaseModel):
+    type: Literal["uniform"]
+    start: float
+    end: float
+
+
+Property = Annotated[
+    Union[LiteralProperty, GaussProperty, GaussAbsoluteProperty, UniformProperty],
+    Field(discriminator="type"),
+]
 
 
 class BoxRegion(BaseModel):
@@ -52,8 +61,25 @@ class CloudEntity(BaseModel):
     velocity: tuple[Property, Property]
 
 
+class BinarySystemEntity(BaseModel):
+    type: Literal["binary"]
+
+    primary: "Entity"
+    secondary: "Entity"
+
+    # a>0
+    semi_major_axis: Property
+    # 0<=e<1 (e>=1 -> flyby)
+    eccentricity: Property
+    # angle in radians, 0<=f<2pi
+    phase: Property
+    # andle in radians, 0<=theta<2pi
+    orientation: Property
+
+
 Entity = Annotated[
-    Union[SimpleEntity, SystemEntity, CloudEntity], Field(discriminator="type")
+    Union[SimpleEntity, SystemEntity, CloudEntity, BinarySystemEntity],
+    Field(discriminator="type"),
 ]
 
 

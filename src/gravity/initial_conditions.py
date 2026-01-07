@@ -53,6 +53,15 @@ class ResolvableGaussian(ResolvableValue):
         return res
 
 
+class ResolvableUniform(ResolvableValue):
+    def __init__(self, start: float, end: float) -> None:
+        self._start = start
+        self._end = end
+
+    def _resolve(self, rand: Random) -> float:
+        return rand.uniform(self._start, self._end)
+
+
 def resolvable_from_config(cfg: config.Property) -> ResolvableValue:
     if isinstance(cfg, config.LiteralProperty):
         return ResolvableLiteral(cfg.value)
@@ -60,6 +69,8 @@ def resolvable_from_config(cfg: config.Property) -> ResolvableValue:
         return ResolvableGaussian(cfg.mean, cfg.sigma, False)
     elif isinstance(cfg, config.GaussAbsoluteProperty):
         return ResolvableGaussian(cfg.mean, cfg.sigma, True)
+    elif isinstance(cfg, config.UniformProperty):
+        return ResolvableUniform(cfg.start, cfg.end)
 
 
 class Entity(ABC):
@@ -69,7 +80,11 @@ class Entity(ABC):
 
     @abstractmethod
     def absolute_entities(
-        self, pos_offset: pygame.Vector2, vel_offset: pygame.Vector2, rand: Random
+        self,
+        G: float,
+        pos_offset: pygame.Vector2,
+        vel_offset: pygame.Vector2,
+        rand: Random,
     ) -> Iterable[InitialConditionsEntity]:
         pass
 
@@ -86,7 +101,11 @@ class SimpleEntity(Entity):
         return self._mass.resolve(rand)
 
     def absolute_entities(
-        self, pos_offset: pygame.Vector2, vel_offset: pygame.Vector2, rand: Random
+        self,
+        G: float,
+        pos_offset: pygame.Vector2,
+        vel_offset: pygame.Vector2,
+        rand: Random,
     ) -> Iterable[InitialConditionsEntity]:
         yield InitialConditionsEntity(
             pos_offset,  # simple entity is always at its own barycenter
@@ -119,7 +138,7 @@ class SystemEntity(Entity):
     def from_config(cls, cfg: config.System, rand: Random) -> Self:
         system = cls()
         for entity_instance in cfg.entities:
-            entity = entity_from_config(entity_instance, rand)
+            entity = entity_from_config(entity_instance.entity, rand)
             pos = (
                 resolvable_from_config(entity_instance.position[0]),
                 resolvable_from_config(entity_instance.position[1]),
@@ -158,7 +177,11 @@ class SystemEntity(Entity):
         return center
 
     def absolute_entities(
-        self, pos_offset: pygame.Vector2, vel_offset: pygame.Vector2, rand: Random
+        self,
+        G: float,
+        pos_offset: pygame.Vector2,
+        vel_offset: pygame.Vector2,
+        rand: Random,
     ) -> Iterable[InitialConditionsEntity]:
         if not self._entities:
             return
@@ -170,7 +193,72 @@ class SystemEntity(Entity):
             vel_vec = pygame.Vector2(vel[0].resolve(rand), vel[1].resolve(rand))
             total_pos = pos_offset + (pos_vec - barycenter)
             total_vel = vel_offset + vel_vec
-            yield from entity.absolute_entities(total_pos, total_vel, rand)
+            yield from entity.absolute_entities(G, total_pos, total_vel, rand)
+
+
+class BinarySystemEntity(Entity):
+    def __init__(
+        self,
+        primary: Entity,
+        secondary: Entity,
+        semi_major_axis: ResolvableValue,
+        eccentricity: ResolvableValue,
+        phase: ResolvableValue,
+        orientation: ResolvableValue,
+    ) -> None:
+        self._primary = primary
+        self._secondary = secondary
+        self._semi_major_axis = semi_major_axis
+        self._eccentricity = eccentricity
+        self._phase = phase
+        self._orientation = orientation
+
+    @classmethod
+    def from_config(cls, cfg: config.BinarySystemEntity, rand: Random) -> Self:
+        return cls(
+            entity_from_config(cfg.primary, rand),
+            entity_from_config(cfg.secondary, rand),
+            resolvable_from_config(cfg.semi_major_axis),
+            resolvable_from_config(cfg.eccentricity),
+            resolvable_from_config(cfg.phase),
+            resolvable_from_config(cfg.orientation),
+        )
+
+    def total_mass(self, rand: Random) -> float:
+        return self._primary.total_mass(rand) + self._secondary.total_mass(rand)
+
+    def absolute_entities(
+        self,
+        G: float,
+        pos_offset: pygame.Vector2,
+        vel_offset: pygame.Vector2,
+        rand: Random,
+    ) -> Iterable[InitialConditionsEntity]:
+        m1 = self._primary.total_mass(rand)
+        m2 = self._secondary.total_mass(rand)
+        M = self.total_mass(rand)
+        mu = G * M
+        a = self._semi_major_axis.resolve(rand)
+        e = self._eccentricity.resolve(rand)
+        f = self._phase.resolve(rand)
+        theta_deg = math.degrees(self._orientation.resolve(rand))
+        r = a * (1 - e * e) / (1 + e * math.cos(f))
+        r_pf = pygame.Vector2(r * math.cos(f), r * math.sin(f))
+        h = math.sqrt(mu * a * (1 - e * e))
+        v_pf = (mu / h) * pygame.Vector2(-math.sin(f), e + math.cos(f))
+        r_rel = r_pf.rotate(theta_deg)
+        v_rel = v_pf.rotate(theta_deg)
+        r1 = -(m2 / M) * r_rel
+        r2 = +(m1 / M) * r_rel
+        v1 = -(m2 / M) * v_rel
+        v2 = +(m1 / M) * v_rel
+
+        total_pos_1 = pos_offset + r1
+        total_pos_2 = pos_offset + r2
+        total_vel_1 = vel_offset + v1
+        total_vel_2 = vel_offset + v2
+        yield from self._primary.absolute_entities(G, total_pos_1, total_vel_1, rand)
+        yield from self._secondary.absolute_entities(G, total_pos_2, total_vel_2, rand)
 
 
 def create_box_lattice(
@@ -222,30 +310,31 @@ def create_cloud_system(cfg: config.CloudEntity, rand: Random) -> SystemEntity:
     return system
 
 
-def entity_from_config(cfg: config.EntityInstance, rand: Random) -> Entity:
-    entity = cfg.entity
-    if isinstance(entity, config.SimpleEntity):
-        return SimpleEntity.from_config(entity)
-    elif isinstance(entity, config.SystemEntity):
-        return SystemEntity.from_config(entity.system, rand)
-    elif isinstance(entity, config.CloudEntity):
-        return create_cloud_system(entity, rand)
-    assert_never(entity)
+def entity_from_config(cfg: config.Entity, rand: Random) -> Entity:
+    if isinstance(cfg, config.SimpleEntity):
+        return SimpleEntity.from_config(cfg)
+    elif isinstance(cfg, config.SystemEntity):
+        return SystemEntity.from_config(cfg.system, rand)
+    elif isinstance(cfg, config.CloudEntity):
+        return create_cloud_system(cfg, rand)
+    elif isinstance(cfg, config.BinarySystemEntity):
+        return BinarySystemEntity.from_config(cfg, rand)
 
 
 class InitialConditions:
-    def __init__(self, root: SystemEntity, rand: Random):
+    def __init__(self, root: SystemEntity, G: float, rand: Random):
         self._root = root
         self._rand = rand
+        self._G = G
 
     @classmethod
-    def from_config(cls, cfg: Optional[config.InitialConditions]) -> Self:
+    def from_config(cls, cfg: Optional[config.InitialConditions], G: float) -> Self:
         if cfg is None:
-            return cls(SystemEntity(), Random())
+            return cls(SystemEntity(), G, Random())
         rand = Random(cfg.seed)
-        return cls(SystemEntity.from_config(cfg.root, rand), rand)
+        return cls(SystemEntity.from_config(cfg.root, rand), G, rand)
 
     def compute_all_entities(self) -> Iterable[InitialConditionsEntity]:
         return self._root.absolute_entities(
-            pygame.Vector2(0, 0), pygame.Vector2(0, 0), self._rand
+            self._G, pygame.Vector2(0, 0), pygame.Vector2(0, 0), self._rand
         )

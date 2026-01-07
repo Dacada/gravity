@@ -163,7 +163,8 @@ def build_application(config: AppConfig) -> Application:
     renderer = Renderer.from_config(config.render, layout)
 
     initial_conditions = InitialConditions.from_config(
-        config.simulation.initial_conditions
+        config.simulation.initial_conditions,
+        config.simulation.physics.gravitational_constant,
     )
 
     game = GameState(
