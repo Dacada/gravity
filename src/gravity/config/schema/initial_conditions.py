@@ -2,6 +2,7 @@ from typing import Annotated, Literal, Optional, Union
 
 from pydantic.fields import Field
 from pydantic.main import BaseModel
+
 from gravity.config.parse import IrrationalFloat
 
 

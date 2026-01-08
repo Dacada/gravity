@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 import logging
 import math
 import random
@@ -6,6 +5,7 @@ import sys
 import time
 from collections import defaultdict, deque
 from contextlib import contextmanager
+from dataclasses import dataclass
 from typing import Iterator
 
 import pygame
@@ -16,13 +16,14 @@ from gravity.core import EventHandler, GameState
 from gravity.initial_conditions import InitialConditions
 from gravity.layout import Layout
 from gravity.physics import (
+    SimulatedEntity,
+    SimulatedEntityHandle,
     SimulationController,
     SimulationCore,
     SimulationEntityDescriptor,
 )
 from gravity.render import Renderer
 from gravity.ui import CursorUIController, InspectorUIState, PauseController
-from src.gravity.physics import SimulatedEntity, SimulatedEntityHandle
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,9 @@ class _Timer:
         return self._current_count >= self._target_count
 
 
-def apply_initial_conditions(simulation: SimulationController, initial_conditions: InitialConditions):
+def apply_initial_conditions(
+    simulation: SimulationController, initial_conditions: InitialConditions
+) -> None:
     for entity in initial_conditions.compute_all_entities():
         simulation.create(
             pos=entity.pos,
@@ -76,7 +79,6 @@ def apply_initial_conditions(simulation: SimulationController, initial_condition
             mass=entity.mass,
             name=entity.name,
         )
-
 
 
 class Application:
@@ -254,7 +256,10 @@ def run_benchmark(config: AppConfig) -> int:
 
     return 0
 
-def _gather_bodies(first: SimulatedEntityHandle, controller: SimulationController, core: SimulationCore) -> dict[int, SimulatedEntity]:
+
+def _gather_bodies(
+    first: SimulatedEntityHandle, controller: SimulationController, core: SimulationCore
+) -> dict[int, SimulatedEntity]:
     bodies = []
     handle: SimulatedEntityHandle = first
     while True:
@@ -275,7 +280,11 @@ def _gather_bodies(first: SimulatedEntityHandle, controller: SimulationControlle
         handle = next_handle
         if handle == first:
             break
-    return {int(b.name, 16): b for b in bodies}
+    for body in bodies:
+        if body.name is None:
+            raise ValueError("body does not have a name")
+    return {int(b.name, 16): b for b in bodies if b.name is not None}
+
 
 @dataclass
 class SimulationSelftestParameters:
@@ -284,12 +293,15 @@ class SimulationSelftestParameters:
     total_angular_momentum: float
     system_energy: float
 
-def _compute_invariants(G: float, bodies: dict[int, SimulatedEntity]):
+
+def _compute_invariants(
+    G: float, bodies: dict[int, SimulatedEntity]
+) -> SimulationSelftestParameters:
     system_mass = 0.0
     total_linear_momentum = pygame.Vector2(0, 0)
     center_of_mass = pygame.Vector2(0, 0)
     total_angular_momentum = 0.0
-    kinetic_energy = 0
+    kinetic_energy = 0.0
 
     for body in bodies.values():
         system_mass += body.mass
@@ -305,10 +317,10 @@ def _compute_invariants(G: float, bodies: dict[int, SimulatedEntity]):
 
     bodies_list = list(bodies.values())
     bodies_count = len(bodies_list)
-    potential_energy = 0
+    potential_energy = 0.0
     for i in range(bodies_count):
         bi = bodies_list[i]
-        for j in range(i+1, bodies_count):
+        for j in range(i + 1, bodies_count):
             bj = bodies_list[j]
             r = (bi.pos - bj.pos).length()
             if r == 0:
@@ -324,6 +336,7 @@ def _compute_invariants(G: float, bodies: dict[int, SimulatedEntity]):
         system_energy=system_energy,
     )
 
+
 def _evaluate_drift(
     initial: SimulationSelftestParameters,
     final: SimulationSelftestParameters,
@@ -334,10 +347,6 @@ def _evaluate_drift(
         if abs(a) < EPS:
             return abs(b)
         return abs(b - a) / abs(a)
-
-    def vector_relative_drift(a: pygame.Vector2, b: pygame.Vector2) -> float:
-        denom = max(a.length(), EPS)
-        return (b - a).length() / denom
 
     angmom_drift = scalar_relative_drift(
         initial.total_angular_momentum,
@@ -388,7 +397,7 @@ def run_selftest(config: AppConfig) -> int:
     )
     initial_conditions = InitialConditions.from_config(
         config.simulation.initial_conditions,
-        config.simulation.physics.gravitational_constant
+        config.simulation.physics.gravitational_constant,
     )
     apply_initial_conditions(simulation_controller, initial_conditions)
 
@@ -425,8 +434,10 @@ def run_selftest(config: AppConfig) -> int:
 
     for i in range(physics_steps):
         if i % 100000 == 0:
-            print(f"Completed: {(i+1)/physics_steps * 100:.2}%")
-            current_bodies = _gather_bodies(first, simulation_controller, simulation_core)
+            print(f"Completed: {(i+1)/physics_steps * 100:.2f}%")
+            current_bodies = _gather_bodies(
+                first, simulation_controller, simulation_core
+            )
             current_invariants = _compute_invariants(G, current_bodies)
             if not _evaluate_drift(initial_invariants, current_invariants):
                 break

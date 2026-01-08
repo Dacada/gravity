@@ -1,5 +1,5 @@
-from typing import Any, Self, Type
 import math
+from typing import Any, Self, Type
 
 from pydantic.annotated_handlers import GetCoreSchemaHandler
 from pydantic_core import core_schema
@@ -48,6 +48,7 @@ class RationalFloat(float):
 
         raise ValueError(f"Invalid ratio format: {value!r}")
 
+
 class IrrationalFloat(float):
     @classmethod
     def __get_pydantic_core_schema__(
@@ -85,6 +86,6 @@ class IrrationalFloat(float):
 
             # yeah i don't care, this application does not need to be secure, it's a physics toy that runs on your own
             # machine, i'm only setting globals to math's dict for pure convinience not for security
-            return eval(text, globals=math.__dict__)
+            return cls(eval(text, globals=math.__dict__))
         except Exception as e:
             raise ValueError("failed to evaluate expr literal") from e
