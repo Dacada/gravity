@@ -342,3 +342,6 @@ class InitialConditions:
         return self._root.absolute_entities(
             self._G, pygame.Vector2(0, 0), pygame.Vector2(0, 0), self._rand
         )
+
+    def system_mass(self) -> float:
+        return self._root.total_mass(self._rand)

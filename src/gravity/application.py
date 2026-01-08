@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 import logging
+import math
 import random
 import sys
 import time
@@ -20,6 +22,7 @@ from gravity.physics import (
 )
 from gravity.render import Renderer
 from gravity.ui import CursorUIController, InspectorUIState, PauseController
+from src.gravity.physics import SimulatedEntity, SimulatedEntityHandle
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +68,17 @@ class _Timer:
         return self._current_count >= self._target_count
 
 
+def apply_initial_conditions(simulation: SimulationController, initial_conditions: InitialConditions):
+    for entity in initial_conditions.compute_all_entities():
+        simulation.create(
+            pos=entity.pos,
+            vel=entity.vel,
+            mass=entity.mass,
+            name=entity.name,
+        )
+
+
+
 class Application:
     def __init__(
         self,
@@ -92,13 +106,7 @@ class Application:
         pygame.display.set_caption("Gravity")
         self._renderer.initialize()
 
-        for entity in self._initial_conditions.compute_all_entities():
-            self._game.simulation.create(
-                pos=entity.pos,
-                vel=entity.vel,
-                mass=entity.mass,
-                name=entity.name,
-            )
+        apply_initial_conditions(self._game.simulation, self._initial_conditions)
 
     def _deinitialize(self) -> None:
         pygame.quit()
@@ -243,5 +251,195 @@ def run_benchmark(config: AppConfig) -> int:
     print("entities,min,max,avg")
     for n, times in results.items():
         print(f"{n},{min(times)},{max(times)},{sum(times)/len(times)}")
+
+    return 0
+
+def _gather_bodies(first: SimulatedEntityHandle, controller: SimulationController, core: SimulationCore) -> dict[int, SimulatedEntity]:
+    bodies = []
+    handle: SimulatedEntityHandle = first
+    while True:
+        body_tuple = core.get(handle)
+        if body_tuple is None:
+            raise RuntimeError(f"{handle=} is invalid!!")
+        pos, vel, mass = body_tuple
+        body = controller.get(handle)
+        if body is None:
+            raise RuntimeError(f"{handle=} is invalid!!")
+        body.pos = pos
+        body.vel = vel
+        body.mass = mass
+        bodies.append(body)
+        next_handle = controller.get_next_point(handle)
+        if next_handle is None:
+            raise RuntimeError(f"next of {handle=} is none!!")
+        handle = next_handle
+        if handle == first:
+            break
+    return {int(b.name, 16): b for b in bodies}
+
+@dataclass
+class SimulationSelftestParameters:
+    total_linear_momentum: pygame.Vector2
+    center_of_mass: pygame.Vector2
+    total_angular_momentum: float
+    system_energy: float
+
+def _compute_invariants(G: float, bodies: dict[int, SimulatedEntity]):
+    system_mass = 0.0
+    total_linear_momentum = pygame.Vector2(0, 0)
+    center_of_mass = pygame.Vector2(0, 0)
+    total_angular_momentum = 0.0
+    kinetic_energy = 0
+
+    for body in bodies.values():
+        system_mass += body.mass
+        total_linear_momentum += body.mass * body.vel
+        center_of_mass += body.mass * body.pos
+        total_angular_momentum += body.mass * (body.pos.cross(body.vel))
+        kinetic_energy += 0.5 * body.mass * body.vel.length_squared()
+
+    if system_mass <= 0:
+        raise ValueError("invalid nonpositive system mass")
+
+    center_of_mass /= system_mass
+
+    bodies_list = list(bodies.values())
+    bodies_count = len(bodies_list)
+    potential_energy = 0
+    for i in range(bodies_count):
+        bi = bodies_list[i]
+        for j in range(i+1, bodies_count):
+            bj = bodies_list[j]
+            r = (bi.pos - bj.pos).length()
+            if r == 0:
+                raise ValueError("zero separation of a pair of bodies")
+            potential_energy -= G * bi.mass * bj.mass / r
+
+    system_energy = kinetic_energy + potential_energy
+
+    return SimulationSelftestParameters(
+        total_linear_momentum=total_linear_momentum,
+        center_of_mass=center_of_mass,
+        total_angular_momentum=total_angular_momentum,
+        system_energy=system_energy,
+    )
+
+def _evaluate_drift(
+    initial: SimulationSelftestParameters,
+    final: SimulationSelftestParameters,
+) -> bool:
+    EPS = 1e-12
+
+    def scalar_relative_drift(a: float, b: float) -> float:
+        if abs(a) < EPS:
+            return abs(b)
+        return abs(b - a) / abs(a)
+
+    def vector_relative_drift(a: pygame.Vector2, b: pygame.Vector2) -> float:
+        denom = max(a.length(), EPS)
+        return (b - a).length() / denom
+
+    angmom_drift = scalar_relative_drift(
+        initial.total_angular_momentum,
+        final.total_angular_momentum,
+    )
+    energy_drift = scalar_relative_drift(
+        initial.system_energy,
+        final.system_energy,
+    )
+
+    P = final.total_linear_momentum.length()
+    CM = final.center_of_mass.length()
+
+    print("Physics invariant drift:")
+    print(f"|P| = {P:.3e}")
+    print(f"|CM| = {CM:.3e}")
+    print(f"ΔL/L = {angmom_drift:.3e}")
+    print(f"ΔE/E = {energy_drift:.3e}")
+
+    if P >= 1e-6:
+        print("P >= 1e-6")
+        return False
+
+    if CM >= 1e-4:
+        print("CM >= 1e-4")
+        return False
+
+    if angmom_drift >= 1e-6:
+        print("ΔL/L >= 1e-6")
+        return False
+
+    if energy_drift >= 1e-3:
+        print("ΔE/E >= 1e-3")
+        return False
+
+    return True
+
+
+def run_selftest(config: AppConfig) -> int:
+    simulation_core = SimulationCore.from_config(config.simulation.physics)
+    simulation_entity_descriptor = SimulationEntityDescriptor.from_config(
+        config.simulation.model
+    )
+    simulation_controller = SimulationController.from_config(
+        config.simulation.control,
+        simulation_core,
+        simulation_entity_descriptor,
+    )
+    initial_conditions = InitialConditions.from_config(
+        config.simulation.initial_conditions,
+        config.simulation.physics.gravitational_constant
+    )
+    apply_initial_conditions(simulation_controller, initial_conditions)
+
+    if config.simulation.physics.enable_merging:
+        raise ValueError("cannot selftest if merging")
+    initial_conditions_config = config.simulation.initial_conditions
+    if initial_conditions_config is None:
+        raise ValueError("no initial conditions set")
+    entities = initial_conditions_config.root.entities
+    if len(entities) != 1:
+        raise ValueError("more than one root entity in the system")
+    entity = entities[0].entity
+    a_prop = getattr(entity, "semi_major_axis", None)
+    if a_prop is None:
+        raise ValueError("initial condition is not a binary system")
+    try:
+        a = a_prop.value
+    except AttributeError:
+        raise ValueError("semi major axis is not a constant")
+
+    G = config.simulation.physics.gravitational_constant
+    M = initial_conditions.system_mass()
+
+    orbital_period = 2 * math.pi * math.sqrt(a * a * a / G / M)
+    timestep = config.simulation.control.physics_timedelta
+    physics_steps = int(math.ceil(orbital_period / timestep))
+
+    first = simulation_controller.get_first_point()
+    if first is None:
+        raise RuntimeError("no handles")
+
+    initial_bodies = _gather_bodies(first, simulation_controller, simulation_core)
+    initial_invariants = _compute_invariants(G, initial_bodies)
+
+    for i in range(physics_steps):
+        if i % 100000 == 0:
+            print(f"Completed: {(i+1)/physics_steps * 100:.2}%")
+            current_bodies = _gather_bodies(first, simulation_controller, simulation_core)
+            current_invariants = _compute_invariants(G, current_bodies)
+            if not _evaluate_drift(initial_invariants, current_invariants):
+                break
+            print()
+
+        simulation_core.update(timestep)
+
+    print()
+    print("Finished.")
+    final_bodies = _gather_bodies(first, simulation_controller, simulation_core)
+    final_invariants = _compute_invariants(G, final_bodies)
+    if not _evaluate_drift(initial_invariants, final_invariants):
+        print("SELF TEST DID NOT PASS")
+        return 1
 
     return 0

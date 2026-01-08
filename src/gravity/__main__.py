@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 from typing import NoReturn
 
-from gravity.application import build_application, run_benchmark
+from gravity.application import build_application, run_benchmark, run_selftest
 from gravity.config import load_config
 
 
@@ -10,7 +10,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "mode",
-        choices=["run", "benchmark"],
+        choices=["run", "benchmark", "selftest"],
     )
     parser.add_argument(
         "-c",
@@ -31,6 +31,8 @@ def main() -> NoReturn:
         res = app.run()
     elif args.mode == "benchmark":
         res = run_benchmark(cfg)
+    elif args.mode == "selftest":
+        res = run_selftest(cfg)
     else:
         res = 1
 
