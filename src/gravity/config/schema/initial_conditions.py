@@ -47,6 +47,7 @@ Region = Annotated[Union[BoxRegion], Field(discriminator="shape")]
 class SimpleEntity(BaseModel):
     type: Literal["simple"]
     mass: Property
+    name: Optional[str] = None
 
 
 class SystemEntity(BaseModel):

@@ -14,6 +14,7 @@ class InitialConditionsEntity:
     pos: pygame.Vector2
     vel: pygame.Vector2
     mass: float
+    name: Optional[str]
 
 
 class ResolvableValue(ABC):
@@ -91,12 +92,13 @@ class Entity(ABC):
 
 
 class SimpleEntity(Entity):
-    def __init__(self, mass: ResolvableValue) -> None:
+    def __init__(self, mass: ResolvableValue, name: Optional[str]) -> None:
         self._mass = mass
+        self._name = name
 
     @classmethod
     def from_config(cls, cfg: config.SimpleEntity) -> Self:
-        return cls(resolvable_from_config(cfg.mass))
+        return cls(resolvable_from_config(cfg.mass), cfg.name)
 
     def total_mass(self, rand: Random) -> float:
         return self._mass.resolve(rand)
@@ -112,6 +114,7 @@ class SimpleEntity(Entity):
             pos_offset,  # simple entity is always at its own barycenter
             vel_offset,
             self.total_mass(rand),
+            self._name,
         )
 
 
@@ -298,7 +301,7 @@ def create_cloud_system(cfg: config.CloudEntity, rand: Random) -> SystemEntity:
     positions = create_lattice(cfg.region, cfg.count, rand)
     system = SystemEntity()
     for position in positions:
-        entity = SimpleEntity(resolvable_from_config(cfg.mass))
+        entity = SimpleEntity(resolvable_from_config(cfg.mass), None)
         velocity = (
             resolvable_from_config(cfg.velocity[0]),
             resolvable_from_config(cfg.velocity[1]),

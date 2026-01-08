@@ -21,7 +21,7 @@
         "control": {
             "physics_timedelta": { "ratio": "1/500" },
             "physics_step_alloted_time_clamp": 0.25,
-            "time_scale": 125
+            "time_scale": 100
         },
         "model": {
             "default_simulated_entity_color": [255, 255, 255]
@@ -52,14 +52,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "00"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "01"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",
@@ -85,14 +87,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "02"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "03"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",
@@ -137,14 +141,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "04"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "05"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",
@@ -170,14 +176,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "06"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "07"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",
@@ -241,14 +249,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "08"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "09"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",
@@ -274,14 +284,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "0a"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "0b"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",
@@ -326,14 +338,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "0c"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "0d"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",
@@ -359,14 +373,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "0e"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "0f"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",
@@ -449,14 +465,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "10"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "11"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",
@@ -482,14 +500,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "12"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "13"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",
@@ -534,14 +554,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "14"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "15"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",
@@ -567,14 +589,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "16"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "17"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",
@@ -638,14 +662,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "18"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "19"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",
@@ -671,14 +697,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "1a"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "1b"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",
@@ -723,14 +751,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "1c"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "1d"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",
@@ -756,14 +786,16 @@
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "1e"
                                             },
                                             "secondary": {
                                                 "type": "simple",
                                                 "mass": {
                                                     "type": "literal",
                                                     "value": 1
-                                                }
+                                                },
+                                                "name": "1f"
                                             },
                                             "semi_major_axis": {
                                                 "type": "literal",

@@ -97,6 +97,7 @@ class Application:
                 pos=entity.pos,
                 vel=entity.vel,
                 mass=entity.mass,
+                name=entity.name,
             )
 
     def _deinitialize(self) -> None:
