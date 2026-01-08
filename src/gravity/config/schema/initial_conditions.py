@@ -2,29 +2,30 @@ from typing import Annotated, Literal, Optional, Union
 
 from pydantic.fields import Field
 from pydantic.main import BaseModel
+from gravity.config.parse import IrrationalFloat
 
 
 class LiteralProperty(BaseModel):
     type: Literal["literal"]
-    value: float
+    value: IrrationalFloat
 
 
 class GaussProperty(BaseModel):
     type: Literal["gaussian"]
-    mean: float
-    sigma: float
+    mean: IrrationalFloat
+    sigma: IrrationalFloat
 
 
 class GaussAbsoluteProperty(BaseModel):
     type: Literal["gaussian-absolute"]
-    mean: float
-    sigma: float
+    mean: IrrationalFloat
+    sigma: IrrationalFloat
 
 
 class UniformProperty(BaseModel):
     type: Literal["uniform"]
-    start: float
-    end: float
+    start: IrrationalFloat
+    end: IrrationalFloat
 
 
 Property = Annotated[

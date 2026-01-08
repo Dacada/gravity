@@ -21,13 +21,13 @@
         "control": {
             "physics_timedelta": { "ratio": "1/500" },
             "physics_step_alloted_time_clamp": 0.25,
-            "time_scale": 50
+            "time_scale": 125
         },
         "model": {
             "default_simulated_entity_color": [255, 255, 255]
         },
         "physics": {
-            "gravitational_constant": 10.0,
+            "gravitational_constant": 1.0,
             "softening_factor": 0,
             "enable_merging": false,
             "merge_distance_squared": 0.01
@@ -113,7 +113,7 @@
                                         },
                                         "semi_major_axis": {
                                             "type": "literal",
-                                            "value": 4
+                                            "value": 10
                                         },
                                         "eccentricity": {
                                             "type": "literal",
@@ -198,7 +198,7 @@
                                         },
                                         "semi_major_axis": {
                                             "type": "literal",
-                                            "value": 4
+                                            "value": 10
                                         },
                                         "eccentricity": {
                                             "type": "literal",
@@ -215,7 +215,7 @@
                                     },
                                     "semi_major_axis": {
                                         "type": "literal",
-                                        "value": 16
+                                        "value": 100
                                     },
                                     "eccentricity": {
                                         "type": "literal",
@@ -302,7 +302,7 @@
                                         },
                                         "semi_major_axis": {
                                             "type": "literal",
-                                            "value": 4
+                                            "value": 10
                                         },
                                         "eccentricity": {
                                             "type": "literal",
@@ -387,7 +387,7 @@
                                         },
                                         "semi_major_axis": {
                                             "type": "literal",
-                                            "value": 4
+                                            "value": 10
                                         },
                                         "eccentricity": {
                                             "type": "literal",
@@ -404,7 +404,7 @@
                                     },
                                     "semi_major_axis": {
                                         "type": "literal",
-                                        "value": 16
+                                        "value": 100
                                     },
                                     "eccentricity": {
                                         "type": "literal",
@@ -421,7 +421,7 @@
                                 },
                                 "semi_major_axis": {
                                     "type": "literal",
-                                    "value": 64
+                                    "value": 1000
                                 },
                                 "eccentricity": {
                                     "type": "literal",
@@ -510,7 +510,7 @@
                                         },
                                         "semi_major_axis": {
                                             "type": "literal",
-                                            "value": 4
+                                            "value": 10
                                         },
                                         "eccentricity": {
                                             "type": "literal",
@@ -595,7 +595,7 @@
                                         },
                                         "semi_major_axis": {
                                             "type": "literal",
-                                            "value": 4
+                                            "value": 10
                                         },
                                         "eccentricity": {
                                             "type": "literal",
@@ -612,7 +612,7 @@
                                     },
                                     "semi_major_axis": {
                                         "type": "literal",
-                                        "value": 16
+                                        "value": 100
                                     },
                                     "eccentricity": {
                                         "type": "literal",
@@ -699,7 +699,7 @@
                                         },
                                         "semi_major_axis": {
                                             "type": "literal",
-                                            "value": 4
+                                            "value": 10
                                         },
                                         "eccentricity": {
                                             "type": "literal",
@@ -784,7 +784,7 @@
                                         },
                                         "semi_major_axis": {
                                             "type": "literal",
-                                            "value": 4
+                                            "value": 10
                                         },
                                         "eccentricity": {
                                             "type": "literal",
@@ -801,7 +801,7 @@
                                     },
                                     "semi_major_axis": {
                                         "type": "literal",
-                                        "value": 16
+                                        "value": 100
                                     },
                                     "eccentricity": {
                                         "type": "literal",
@@ -818,7 +818,7 @@
                                 },
                                 "semi_major_axis": {
                                     "type": "literal",
-                                    "value": 64
+                                    "value": 1000
                                 },
                                 "eccentricity": {
                                     "type": "literal",
@@ -835,7 +835,7 @@
                             },
                             "semi_major_axis": {
                                 "type": "literal",
-                                "value": 256
+                                "value": 10000
                             },
                             "eccentricity": {
                                 "type": "literal",

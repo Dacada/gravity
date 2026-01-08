@@ -55,6 +55,7 @@ class ResolvableGaussian(ResolvableValue):
 
 class ResolvableUniform(ResolvableValue):
     def __init__(self, start: float, end: float) -> None:
+        super().__init__()
         self._start = start
         self._end = end
 
