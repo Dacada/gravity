@@ -1,0 +1,5 @@
+Physics invariant drift:
+|P| = 4.763e-12
+|CM| = 1.995e-07
+ΔL/L = 5.667e-12
+ΔE/E = 8.673e-09
