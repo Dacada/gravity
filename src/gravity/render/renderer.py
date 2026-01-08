@@ -1,4 +1,4 @@
-from typing import Optional, Self
+from typing import Optional, Self, Sequence
 
 import pygame
 
@@ -8,6 +8,7 @@ from gravity.core import GameState
 from gravity.layout import Layout
 from gravity.physics import SimulatedEntity, SimulatedEntityHandle, SimulationController
 from gravity.render.styles import IconStyle, IconStyleRenderArgs, RenderStyle
+from gravity.trail import TrailController
 from gravity.types import Color
 from gravity.ui import InspectorUIState, PauseController
 
@@ -62,6 +63,7 @@ class Renderer:
         self._render_viewport(
             game.camera,
             game.simulation,
+            game.trail_controller,
             game.inspector.get_selected_entity_handle(),
         )
         self._render_inspector(game.inspector, game.simulation)
@@ -71,6 +73,7 @@ class Renderer:
         self,
         camera: Camera,
         simulation: SimulationController,
+        trails: TrailController,
         selected_handle: Optional[SimulatedEntityHandle],
     ) -> None:
         viewport = self._layout.viewport
@@ -81,6 +84,10 @@ class Renderer:
             entity = simulation.get(handle)
             if entity is not None:
                 self._render_simulated_entity(camera, entity, handle == selected_handle)
+        for handle in trails.entities():
+            entity = simulation.get(handle)
+            if entity is not None:
+                self._render_trail(entity, camera, trails.samples(handle))
 
     def _render_simulated_entity(
         self, camera: Camera, entity: SimulatedEntity, is_selected: bool
@@ -103,6 +110,20 @@ class Renderer:
         # Draw label
         if entity.name is not None:
             self._draw_simulated_entity_label(entity.name, entity.color, screen_pos)
+
+    def _render_trail(
+        self, entity: SimulatedEntity, camera: Camera, samples: Sequence[pygame.Vector2]
+    ) -> None:
+        if len(samples) < 2:
+            return
+
+        pygame.draw.lines(
+            self._screen,
+            entity.color,
+            False,
+            [camera.world_to_screen(s) for s in samples],
+            self._style.trail.width,
+        )
 
     def _draw_simulated_entity_reticle(self, screen_pos: pygame.Vector2) -> None:
         radius = self._style.simulated_entity.radius

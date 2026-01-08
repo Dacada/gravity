@@ -970,9 +970,18 @@
             "name": {
                 "diagonal_length": 20,
                 "horizontal_length": 40
+            },
+            "trail": {
+                "width": 2
             }
         },
         "font_name": "notosansmono",
-        "font_size": 12
+        "font_size": 12,
+        "effects": {
+            "trail": {
+                "sampling_period": { "ratio": "1/20" },
+                "sample_buffer_size": 256
+            }
+        }
     }
 }

@@ -50,3 +50,7 @@ class SimulatedEntity(BaseModel):
 class Name(BaseModel):
     diagonal_length: int
     horizontal_length: int
+
+
+class Trail(BaseModel):
+    width: int

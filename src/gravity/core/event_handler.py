@@ -89,6 +89,12 @@ class EventHandler:
 
             return True
 
+        # toggle tracing
+        if event.key == pygame.K_t:
+            handle = self._game.inspector.get_selected_entity_handle()
+            self._game.trail_controller.toggle_track(handle)
+            return True
+
         return False
 
     def _handle_camera(self, event: pygame.event.Event) -> bool:

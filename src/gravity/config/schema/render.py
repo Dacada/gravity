@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+from gravity.config.parse import RationalFloat
 from gravity.config.schema.render_styles import (
     ComIcon,
     FreeCamIcon,
@@ -9,6 +10,16 @@ from gravity.config.schema.render_styles import (
     SimulatedEntity,
     TargetIcon,
 )
+from gravity.config.schema.render_styles import Trail as TrailStyle
+
+
+class Trail(BaseModel):
+    sampling_period: RationalFloat
+    sample_buffer_size: int
+
+
+class Effects(BaseModel):
+    trail: Trail
 
 
 class Styles(BaseModel):
@@ -19,9 +30,11 @@ class Styles(BaseModel):
     inspector: Inspector
     simulated_entity: SimulatedEntity
     name: Name
+    trail: TrailStyle
 
 
 class Render(BaseModel):
     styles: Styles
     font_name: str
     font_size: int
+    effects: Effects

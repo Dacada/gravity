@@ -276,6 +276,15 @@ class NameStyle:
 
 
 @dataclass
+class TrailStyle:
+    width: int
+
+    @classmethod
+    def from_config(cls, cfg: render_styles.Trail) -> Self:
+        return cls(cfg.width)
+
+
+@dataclass
 class RenderStyle:
     pause_icon: IconStyle
     target_icon: IconStyle
@@ -284,6 +293,7 @@ class RenderStyle:
     inspector: InspectorStyle
     simulated_entity: SimulatedEntityStyle
     name: NameStyle
+    trail: TrailStyle
 
     @classmethod
     def from_config(cls, cfg: RenderStyles) -> Self:
@@ -295,4 +305,5 @@ class RenderStyle:
             InspectorStyle.from_config(cfg.inspector),
             SimulatedEntityStyle.from_config(cfg.simulated_entity),
             NameStyle.from_config(cfg.name),
+            TrailStyle.from_config(cfg.trail),
         )

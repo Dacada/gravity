@@ -4,6 +4,7 @@ import pygame
 
 from gravity.camera import Camera, CameraController
 from gravity.physics import SimulationController
+from gravity.trail import TrailController
 from gravity.ui import CursorUIController, InspectorUIState, PauseController
 
 
@@ -16,6 +17,7 @@ class GameState:
         camera_controller: CameraController,
         pause_controller: PauseController,
         cursor_ui_controller: CursorUIController,
+        trail_controller: TrailController,
     ):
         self.simulation = simulation
         self.inspector = inspector
@@ -23,6 +25,7 @@ class GameState:
         self.camera_controller = camera_controller
         self.pause_controller = pause_controller
         self.cursor_ui_controller = cursor_ui_controller
+        self.trail_controller = trail_controller
 
         self._running = True
         self._physics_loop_accumulator = 0.0
@@ -54,3 +57,6 @@ class GameState:
                 self.inspector.unselect_entity_handle()
 
         self.camera_controller.update(dt, self.camera, self.simulation, handle)
+
+        if not self.pause_controller.is_paused():
+            self.trail_controller.update(dt)

@@ -23,6 +23,7 @@ from gravity.physics import (
     SimulationEntityDescriptor,
 )
 from gravity.render import Renderer
+from gravity.trail import TrailController
 from gravity.ui import CursorUIController, InspectorUIState, PauseController
 
 logger = logging.getLogger(__name__)
@@ -170,6 +171,9 @@ def build_application(config: AppConfig) -> Application:
     camera_controller = CameraController()
     pause_controller = PauseController.from_config(config.ui.pause_animation)
     cursor_ui_controller = CursorUIController.from_config(config.ui.cursor, layout)
+    trail_controller = TrailController.from_config(
+        config.render.effects.trail, simulation
+    )
 
     renderer = Renderer.from_config(config.render, layout)
 
@@ -185,6 +189,7 @@ def build_application(config: AppConfig) -> Application:
         camera_controller,
         pause_controller,
         cursor_ui_controller,
+        trail_controller,
     )
     events = EventHandler(game, layout)
 
