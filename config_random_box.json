@@ -19,7 +19,7 @@
     },
     "simulation": {
         "control": {
-            "physics_timedelta": { "ratio": "1/500" },
+            "physics_timedelta": { "ratio": "5/100" },
             "physics_step_alloted_time_clamp": 0.25,
             "time_scale": 1
         },
@@ -27,10 +27,10 @@
             "default_simulated_entity_color": [255, 255, 255]
         },
         "physics": {
-            "gravitational_constant": 100.0,
+            "gravitational_constant": 1.0,
             "softening_factor": 0.5,
             "enable_merging": false,
-            "merge_distance_squared": 1
+            "merge_distance_squared": 0.1
         },
         "initial_conditions": {
             "seed": null,
@@ -39,12 +39,12 @@
                     {
                         "entity": {
                             "type": "cloud",
-                            "count": 2025,
+                            "count": 5000,
                             "region": {
                                 "shape": "box",
-                                "disorder": 0,
-                                "width": 500,
-                                "height": 500
+                                "disorder": 2,
+                                "width": 1000,
+                                "height": 1000
                             },
                             "mass": {
                                 "type": "gaussian-absolute",
