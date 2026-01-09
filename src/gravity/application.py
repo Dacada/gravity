@@ -232,19 +232,21 @@ def run_benchmark(config: AppConfig) -> int:
     steps_per_trial = 100
     trials = 5
     seed_base = 12345
-    entity_counts = range(1, 751, 1)
+    entity_counts = range(1, 3251, 1)
 
     width = 500
     height = 500
     mu = 0.0
     sigma = 1.0
 
-    dt = config.simulation.control.physics_timedelta
+    dt = 1 / 500
 
     results = defaultdict(list)
 
     total_runs = len(entity_counts) * trials
     completed = 0
+
+    config.simulation.physics.enable_merging = False
 
     for n_entities in entity_counts:
         for trial in range(trials):
