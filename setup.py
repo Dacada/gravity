@@ -12,8 +12,7 @@ physics_core = Extension(
     include_dirs=[
         "src/gravity/physics/native/include",
     ],
-    #extra_compile_args=["-std=c17", "-Ofast", "-march=native"],
-    extra_compile_args=["-std=c17", "-O0", "-g"],
+    extra_compile_args=["-std=c17", "-Ofast", "-march=native"],
 )
 
 setup(
