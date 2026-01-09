@@ -211,7 +211,7 @@ def run_benchmark(config: AppConfig) -> int:
     steps_per_trial = 100
     trials = 5
     seed_base = 12345
-    entity_counts = range(1, 351, 1)
+    entity_counts = range(1, 751, 1)
 
     width = 500
     height = 500
@@ -241,7 +241,7 @@ def run_benchmark(config: AppConfig) -> int:
                     random.uniform(-height / 2, height / 2),
                 )
                 vel = pygame.Vector2(0, 0)
-                mass = random.gauss(mu, sigma)
+                mass = abs(random.gauss(mu, sigma))
                 simulation_core.create(pos, vel, mass)
 
             # warm-up
