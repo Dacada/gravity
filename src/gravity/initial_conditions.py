@@ -326,17 +326,19 @@ def entity_from_config(cfg: config.Entity, rand: Random) -> Entity:
 
 
 class InitialConditions:
-    def __init__(self, root: SystemEntity, G: float, rand: Random):
+    def __init__(self, root: SystemEntity, funny: bool, G: float, rand: Random):
         self._root = root
         self._rand = rand
         self._G = G
 
+        self.funny = funny
+
     @classmethod
     def from_config(cls, cfg: Optional[config.InitialConditions], G: float) -> Self:
         if cfg is None:
-            return cls(SystemEntity(), G, Random())
+            return cls(SystemEntity(), False, G, Random())
         rand = Random(cfg.seed)
-        return cls(SystemEntity.from_config(cfg.root, rand), G, rand)
+        return cls(SystemEntity.from_config(cfg.root, rand), cfg.funny, G, rand)
 
     def compute_all_entities(self) -> Iterable[InitialConditionsEntity]:
         return self._root.absolute_entities(

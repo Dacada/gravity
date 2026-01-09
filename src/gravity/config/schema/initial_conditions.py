@@ -98,4 +98,5 @@ class System(BaseModel):
 
 class InitialConditions(BaseModel):
     root: System
+    funny: bool = False
     seed: Optional[int]

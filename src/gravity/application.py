@@ -1,3 +1,4 @@
+import colorsys
 import logging
 import math
 import random
@@ -6,7 +7,7 @@ import time
 from collections import defaultdict, deque
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Iterator
+from typing import Iterator, Optional
 
 import pygame
 
@@ -24,6 +25,7 @@ from gravity.physics import (
 )
 from gravity.render import Renderer
 from gravity.trail import TrailController
+from gravity.types import Color
 from gravity.ui import CursorUIController, InspectorUIState, PauseController
 
 logger = logging.getLogger(__name__)
@@ -71,15 +73,32 @@ class _Timer:
 
 
 def apply_initial_conditions(
-    simulation: SimulationController, initial_conditions: InitialConditions
+    simulation: SimulationController,
+    trail_controller: Optional[TrailController],
+    initial_conditions: InitialConditions,
 ) -> None:
+    def random_color() -> Color:
+        h = random.random()
+        s = random.uniform(0.6, 1.0)
+        v = random.uniform(0.7, 1.0)
+        r, g, b = colorsys.hsv_to_rgb(h, s, v)
+        return Color(int(r * 255), int(g * 255), int(v * 255))
+
     for entity in initial_conditions.compute_all_entities():
-        simulation.create(
+        handle = simulation.create(
             pos=entity.pos,
             vel=entity.vel,
             mass=entity.mass,
             name=entity.name,
         )
+        if initial_conditions.funny:
+            if trail_controller is not None:
+                trail_controller.toggle_track(handle)
+            entity_sim = simulation.get(handle)
+            if entity_sim is None:
+                continue
+            entity_sim.color = random_color()
+            simulation.apply(entity_sim)
 
 
 class Application:
@@ -109,7 +128,9 @@ class Application:
         pygame.display.set_caption("Gravity")
         self._renderer.initialize()
 
-        apply_initial_conditions(self._game.simulation, self._initial_conditions)
+        apply_initial_conditions(
+            self._game.simulation, self._game.trail_controller, self._initial_conditions
+        )
 
     def _deinitialize(self) -> None:
         pygame.quit()
@@ -407,7 +428,7 @@ def run_selftest(config: AppConfig) -> int:
         config.simulation.initial_conditions,
         config.simulation.physics.gravitational_constant,
     )
-    apply_initial_conditions(simulation_controller, initial_conditions)
+    apply_initial_conditions(simulation_controller, None, initial_conditions)
 
     if config.simulation.physics.enable_merging:
         raise ValueError("cannot selftest if merging")
