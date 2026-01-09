@@ -29,6 +29,7 @@ class Layout:
         inspector_ratio: float,
         pause_icon: LayoutIcon,
         camera_state_icon: LayoutIcon,
+        chrono_trigger_icon: LayoutIcon,
     ):
         self._width = width
         self._height = height
@@ -36,12 +37,14 @@ class Layout:
         self._inspector_ratio = inspector_ratio
         self._pause_icon = pause_icon
         self._camera_state_icon = camera_state_icon
+        self._chrono_trigger_icon = chrono_trigger_icon
 
         self.rect: pygame.Rect
         self.viewport: pygame.Rect
         self.inspector: pygame.Rect
         self.pause_icon: pygame.Rect
         self.camera_state_icon: pygame.Rect
+        self.chrono_trigger_icon: pygame.Rect
 
         self._recalculate()
 
@@ -53,6 +56,7 @@ class Layout:
             cfg.inspector_ratio,
             LayoutIcon.from_config(cfg.pause_icon),
             LayoutIcon.from_config(cfg.camera_state_icon),
+            LayoutIcon.from_config(cfg.chrono_trigger_icon),
         )
 
     def resize(self, size: pygame.Vector2) -> None:
@@ -76,9 +80,22 @@ class Layout:
 
         if icon.anchor == AnchorType.TOP_LEFT:
             pass
+        elif icon.anchor == AnchorType.TOP_CENTER:
+            x -= w / 2
         elif icon.anchor == AnchorType.TOP_RIGHT:
             x -= w
+        elif icon.anchor == AnchorType.CENTER_LEFT:
+            y -= h / 2
+        elif icon.anchor == AnchorType.CENTER_CENTER:
+            x -= w / 2
+            y -= h / 2
+        elif icon.anchor == AnchorType.CENTER_RIGHT:
+            x -= w
+            y -= h / 2
         elif icon.anchor == AnchorType.BOTTOM_LEFT:
+            y -= h
+        elif icon.anchor == AnchorType.BOTTOM_CENTER:
+            x -= w / 2
             y -= h
         elif icon.anchor == AnchorType.BOTTOM_RIGHT:
             x -= w
@@ -107,4 +124,8 @@ class Layout:
         self.camera_state_icon = self._icon(
             self.rect,
             self._camera_state_icon,
+        )
+        self.chrono_trigger_icon = self._icon(
+            self.rect,
+            self._chrono_trigger_icon,
         )

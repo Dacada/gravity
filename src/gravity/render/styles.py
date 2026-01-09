@@ -227,6 +227,68 @@ class FreeCamIconStyle(IconStyle):
 
 
 @dataclass
+class ChronoTriggerIconStyle(IconStyle):
+    rewind_color: Color
+    text_color: Color
+    text: str
+    tri_size: int
+    tri_gap: int
+    font_size: int
+
+    @classmethod
+    def from_config(cls, cfg: render_styles.ChronoTriggerIcon) -> Self:
+        return cls(
+            rewind_color=Color(*cfg.rewind_color),
+            text_color=Color(*cfg.text_color),
+            text=cfg.text,
+            tri_size=cfg.tri_size,
+            tri_gap=cfg.tri_gap,
+            font_size=cfg.font_size,
+        )
+
+    def render(
+        self, surface: pygame.Surface, **kwargs: Unpack[IconStyleRenderArgs]
+    ) -> None:
+        alpha = kwargs.get("alpha")
+        if alpha is None:
+            raise RuntimeError("missing alpha value for chrono trigger")
+
+        w, h = surface.get_size()
+        cx, cy = w // 2, h // 2
+
+        rewind_color = (*self.rewind_color, alpha)
+        text_color = (*self.text_color, alpha)
+
+        # --- rewind symbol (two left-pointing triangles) ---
+        tri_h = self.tri_size
+        tri_w = self.tri_size
+
+        mid_y = cy - self.font_size // 2
+
+        left_tri = [
+            (cx - self.tri_gap, mid_y),
+            (cx - self.tri_gap + tri_w, mid_y - tri_h),
+            (cx - self.tri_gap + tri_w, mid_y + tri_h),
+        ]
+
+        right_tri = [
+            (cx - self.tri_gap - tri_w, mid_y),
+            (cx - self.tri_gap, mid_y - tri_h),
+            (cx - self.tri_gap, mid_y + tri_h),
+        ]
+
+        pygame.draw.polygon(surface, rewind_color, left_tri)
+        pygame.draw.polygon(surface, rewind_color, right_tri)
+
+        # --- text ---
+        font = pygame.font.Font(None, self.font_size)
+        text_surf = font.render(self.text, True, text_color)
+        text_rect = text_surf.get_rect(center=(cx, cy + self.font_size))
+
+        surface.blit(text_surf, text_rect)
+
+
+@dataclass
 class InspectorStyle:
     bg_color: Color
     border_color: Color
@@ -290,6 +352,7 @@ class RenderStyle:
     target_icon: IconStyle
     com_icon: IconStyle
     freecam_icon: IconStyle
+    chrono_trigger_icon: IconStyle
     inspector: InspectorStyle
     simulated_entity: SimulatedEntityStyle
     name: NameStyle
@@ -302,6 +365,7 @@ class RenderStyle:
             TargetIconStyle.from_config(cfg.target_icon),
             CenterOfMassRingIconStyle.from_config(cfg.com_icon),
             FreeCamIconStyle.from_config(cfg.freecam_icon),
+            ChronoTriggerIconStyle.from_config(cfg.chrono_trigger_icon),
             InspectorStyle.from_config(cfg.inspector),
             SimulatedEntityStyle.from_config(cfg.simulated_entity),
             NameStyle.from_config(cfg.name),

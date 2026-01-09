@@ -4,6 +4,7 @@ import pygame
 
 from gravity.core import GameState
 from gravity.layout import Layout
+from gravity.ui.fade_controller import AnimationName
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,8 @@ class EventHandler:
     def _handle_control(self, event: pygame.event.Event) -> bool:
         # pause/unpause
         if event.key == pygame.K_SPACE:
-            self._game.pause_controller.toggle_paused()
+            self._game.toggle_paused()
+            self._game.fade_controller.toggle_animation(AnimationName.PAUSE)
             return True
 
         # select via keyboard (maybe from unselected)
@@ -93,6 +95,12 @@ class EventHandler:
         if event.key == pygame.K_t:
             handle = self._game.inspector.get_selected_entity_handle()
             self._game.trail_controller.toggle_track(handle)
+            return True
+
+        # toggle CHRONO TRIGGER
+        if event.key == pygame.K_q:
+            self._game.simulation.toggle_chrono_trigger()
+            self._game.fade_controller.toggle_animation(AnimationName.CHRONO_TRIGGER)
             return True
 
         return False

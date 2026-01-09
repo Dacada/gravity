@@ -11,6 +11,7 @@ class Control(BaseModel):
     physics_timedelta: RationalFloat
     time_scale: RationalFloat
     physics_step_alloted_time_clamp: RationalFloat
+    allow_before_the_beginning_of_time: bool = False
 
 
 class Model(BaseModel):

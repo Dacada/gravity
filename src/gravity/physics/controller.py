@@ -262,19 +262,24 @@ class SimulationController:
         physics_timedelta: float,
         time_scale: float,
         physics_step_alloted_time_clamp: float,
+        allow_before_the_beginning_of_time: float,
     ):
         self._simulation_core = simulation_core
         self._simulation_entity_descriptor = simulation_entity_descriptor
-        self._simulation_entity_order_controller = SimulationEntityOrderController()
+        self._physics_step_alloted_time_clamp = physics_step_alloted_time_clamp
         self._time_scale = time_scale
+        self._allow_before_the_beginning_of_time = allow_before_the_beginning_of_time
+        self._simulation_entity_order_controller = SimulationEntityOrderController()
         self._simulation_entity_counter = SimulationEntityCounter()
 
         self._physics_loop_accumulator = 0.0
+        self._physics_total_time = 0.0
         self._entity_cache: dict[SimulatedEntityHandle, SimulatedEntity] = {}
         self._on_merge_callbacks: list[OnMergeCallback] = []
 
         self._physics_timedelta = physics_timedelta
-        self._physics_step_alloted_time_clamp = physics_step_alloted_time_clamp
+
+        self._chrono_trigger = False
 
         self.on_merge(self._simulation_entity_descriptor.merge)
         self.on_merge(self._simulation_entity_counter.merge)
@@ -293,6 +298,7 @@ class SimulationController:
             cfg.physics_timedelta,
             cfg.time_scale,
             cfg.physics_step_alloted_time_clamp,
+            cfg.allow_before_the_beginning_of_time,
         )
 
     def create(
@@ -369,13 +375,22 @@ class SimulationController:
             SimulatedEntity.name.clear_modified(entity)
 
     def update(self, dt: float) -> None:
+        if not self._allow_before_the_beginning_of_time and self._chrono_trigger:
+            if self._physics_total_time < 0.0:
+                return
+
         if dt > self._physics_step_alloted_time_clamp:
             dt = self._physics_step_alloted_time_clamp
 
         self._physics_loop_accumulator += dt * self._time_scale
         while self._physics_loop_accumulator >= self._physics_timedelta:
-            self._simulation_core.update(self._physics_timedelta)
+            if self._chrono_trigger:
+                timestep = -self._physics_timedelta
+            else:
+                timestep = self._physics_timedelta
+            self._simulation_core.update(timestep)
             self._physics_loop_accumulator -= self._physics_timedelta
+            self._physics_total_time += timestep
 
         merges = self._simulation_core.merge_entities()
         self._process_merges(merges)
@@ -417,3 +432,9 @@ class SimulationController:
 
     def on_merge(self, callback: OnMergeCallback) -> None:
         self._on_merge_callbacks.append(callback)
+
+    def toggle_chrono_trigger(self) -> None:
+        self._chrono_trigger = not self._chrono_trigger
+
+    def is_chrono_trigger(self) -> bool:
+        return self._chrono_trigger

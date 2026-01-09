@@ -26,7 +26,8 @@ from gravity.physics import (
 from gravity.render import Renderer
 from gravity.trail import TrailController
 from gravity.types import Color
-from gravity.ui import CursorUIController, InspectorUIState, PauseController
+from gravity.ui import CursorUIController, FadeController, InspectorUIState
+from gravity.ui.fade_controller import AnimationName
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +129,9 @@ class Application:
         pygame.display.set_caption("Gravity")
         self._renderer.initialize()
 
+        self._game.toggle_paused()
+        self._game.fade_controller.toggle_animation(AnimationName.PAUSE)
+
         apply_initial_conditions(
             self._game.simulation, self._game.trail_controller, self._initial_conditions
         )
@@ -190,7 +194,7 @@ def build_application(config: AppConfig) -> Application:
     camera = Camera.from_config(config.camera, layout)
 
     camera_controller = CameraController()
-    pause_controller = PauseController.from_config(config.ui.pause_animation)
+    fade_controller = FadeController.from_config(config.ui.animation)
     cursor_ui_controller = CursorUIController.from_config(config.ui.cursor, layout)
     trail_controller = TrailController.from_config(
         config.render.effects.trail, simulation
@@ -211,7 +215,7 @@ def build_application(config: AppConfig) -> Application:
         inspector,
         camera,
         camera_controller,
-        pause_controller,
+        fade_controller,
         cursor_ui_controller,
         trail_controller,
     )

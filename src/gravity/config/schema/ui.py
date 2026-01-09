@@ -12,11 +12,16 @@ class Cursor(BaseModel):
     selection_distance_squared: int
 
 
-class PauseAnimation(BaseModel):
+class AnimationInfo(BaseModel):
     speed: float
 
 
+class Animation(BaseModel):
+    pause: AnimationInfo
+    chrono_trigger: AnimationInfo
+
+
 class Ui(BaseModel):
-    pause_animation: PauseAnimation
+    animation: Animation
     cursor: Cursor
     format: Format

@@ -10,7 +10,8 @@ from gravity.physics import SimulatedEntity, SimulatedEntityHandle, SimulationCo
 from gravity.render.styles import IconStyle, IconStyleRenderArgs, RenderStyle
 from gravity.trail import TrailController
 from gravity.types import Color
-from gravity.ui import InspectorUIState, PauseController
+from gravity.ui import FadeController, InspectorUIState
+from gravity.ui.fade_controller import AnimationName
 
 
 class Renderer:
@@ -67,7 +68,9 @@ class Renderer:
             game.inspector.get_selected_entity_handle(),
         )
         self._render_inspector(game.inspector, game.simulation)
-        self._render_overlay(game.pause_controller, game.camera_controller)
+        self._render_overlay(
+            game.fade_controller, game.simulation, game.camera_controller
+        )
 
     def _render_viewport(
         self,
@@ -215,16 +218,25 @@ class Renderer:
         self._screen.blit(text_surface, text_rect)
 
     def _render_overlay(
-        self, pause_controller: PauseController, camera_controller: CameraController
+        self,
+        fade_controller: FadeController,
+        simulation_controller: SimulationController,
+        camera_controller: CameraController,
     ) -> None:
-        if pause_controller.is_paused():
-            self._render_paused_icon(pause_controller.icon_alpha)
+        if fade_controller.is_animation_running(AnimationName.PAUSE):
+            self._render_paused_icon(fade_controller.current_alpha(AnimationName.PAUSE))
+
         if camera_controller.is_follow_selected_mass_mode():
             self._render_target_icon()
         elif camera_controller.is_follow_center_of_mass_mode():
             self._render_com_icon()
         else:
             self._render_freecamera_icon(camera_controller.get_movement_directions())
+
+        if simulation_controller.is_chrono_trigger():
+            self._render_chrono_trigger(
+                fade_controller.current_alpha(AnimationName.CHRONO_TRIGGER)
+            )
 
     def _render_icon(
         self, layout_rect: pygame.Rect, style: IconStyle, kwargs: IconStyleRenderArgs
@@ -260,4 +272,11 @@ class Renderer:
             self._layout.camera_state_icon,
             self._style.freecam_icon,
             {"dirs": dirs},
+        )
+
+    def _render_chrono_trigger(self, alpha: int) -> None:
+        self._render_icon(
+            self._layout.chrono_trigger_icon,
+            self._style.chrono_trigger_icon,
+            {"alpha": alpha},
         )

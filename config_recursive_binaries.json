@@ -917,8 +917,13 @@
             "viewport_clickable_margin": 5,
             "selection_distance_squared": 20
         },
-        "pause_animation": {
-            "speed": 2.5
+        "animation": {
+            "pause": {
+                "speed": 2.5
+            },
+            "chrono_trigger": {
+                "speed": 10.0
+            }
         }
     },
     "camera": {

@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 from gravity.config.parse import RationalFloat
 from gravity.config.schema.render_styles import (
+    ChronoTriggerIcon,
     ComIcon,
     FreeCamIcon,
     Inspector,
@@ -27,6 +28,7 @@ class Styles(BaseModel):
     target_icon: TargetIcon
     com_icon: ComIcon
     freecam_icon: FreeCamIcon
+    chrono_trigger_icon: ChronoTriggerIcon
     inspector: Inspector
     simulated_entity: SimulatedEntity
     name: Name

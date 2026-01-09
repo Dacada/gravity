@@ -5,7 +5,8 @@ import pygame
 from gravity.camera import Camera, CameraController
 from gravity.physics import SimulationController
 from gravity.trail import TrailController
-from gravity.ui import CursorUIController, InspectorUIState, PauseController
+from gravity.ui import CursorUIController, FadeController, InspectorUIState
+from gravity.ui.fade_controller import AnimationName
 
 
 class GameState:
@@ -15,7 +16,7 @@ class GameState:
         inspector: InspectorUIState,
         camera: Camera,
         camera_controller: CameraController,
-        pause_controller: PauseController,
+        fade_controller: FadeController,
         cursor_ui_controller: CursorUIController,
         trail_controller: TrailController,
     ):
@@ -23,11 +24,12 @@ class GameState:
         self.inspector = inspector
         self.camera = camera
         self.camera_controller = camera_controller
-        self.pause_controller = pause_controller
+        self.fade_controller = fade_controller
         self.cursor_ui_controller = cursor_ui_controller
         self.trail_controller = trail_controller
 
         self._running = True
+        self._pause_physics = False
         self._physics_loop_accumulator = 0.0
         self._resize: Optional[pygame.Vector2] = None
 
@@ -45,10 +47,13 @@ class GameState:
         self._resize = None
         return ret
 
-    def update(self, dt: float) -> None:
-        self.pause_controller.update(dt)
+    def toggle_paused(self) -> None:
+        self._pause_physics = not self._pause_physics
 
-        if not self.pause_controller.is_paused():
+    def update(self, dt: float) -> None:
+        self.fade_controller.update(dt)
+
+        if not self._pause_physics:
             self.simulation.update(dt)
 
         handle = self.inspector.get_selected_entity_handle()
@@ -58,5 +63,5 @@ class GameState:
 
         self.camera_controller.update(dt, self.camera, self.simulation, handle)
 
-        if not self.pause_controller.is_paused():
+        if not self.fade_controller.is_animation_running(AnimationName.PAUSE):
             self.trail_controller.update(dt)

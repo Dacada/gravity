@@ -32,6 +32,16 @@ class FreeCamIcon(BaseModel):
     line_width: int
 
 
+class ChronoTriggerIcon(BaseModel):
+    rewind_color: tuple[int, int, int]
+    text_color: tuple[int, int, int]
+    text: str
+    tri_size: int
+    tri_gap: int
+    font_size: int
+    alpha: int
+
+
 class Inspector(BaseModel):
     bg_color: tuple[int, int, int]
     border_color: tuple[int, int, int]

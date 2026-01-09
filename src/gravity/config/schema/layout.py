@@ -16,3 +16,4 @@ class Layout(BaseModel):
     inspector_ratio: RationalFloat
     pause_icon: Icon
     camera_state_icon: Icon
+    chrono_trigger_icon: Icon
