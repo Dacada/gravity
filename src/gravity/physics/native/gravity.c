@@ -1,5 +1,6 @@
 #include "gravity.h"
 #include <math.h>
+#include <omp.h>
 
 void gravity_destroy(struct gravity *g) {
   g->alloc.free(g->free_slots);
@@ -594,47 +595,61 @@ int gravity_merge_entities(struct gravity *g, struct gravity_merge_info *info) {
   return 0;
 }
 
-static void compute_accelerations(const struct gravity *g, double *ax,
+static void compute_accelerations(const struct gravity *g,
+                                  double *ax,
                                   double *ay) {
-  for (size_t i = 0; i < g->entity_len; i++) {
-    ax[i] = 0;
-    ay[i] = 0;
-  }
+  const size_t n = g->entity_len;
+  const double G = g->gravitational_constant;
+  const double eps = g->softening_factor;
 
-  for (size_t i = 0; i < g->entity_len; i++) {
-    for (size_t j = i + 1; j < g->entity_len; j++) {
-      double rx = g->px[j] - g->px[i];
-      double ry = g->py[j] - g->py[i];
-      double dist_sq = rx * rx + ry * ry + g->softening_factor;
+#pragma omp parallel for schedule(static)
+  for (size_t i = 0; i < n; i++) {
+
+    double axi = 0.0;
+    double ayi = 0.0;
+
+    const double xi = g->px[i];
+    const double yi = g->py[i];
+    const double mi = g->mass[i];
+
+    for (size_t j = 0; j < n; j++) {
+      if (j == i) continue;
+
+      double rx = g->px[j] - xi;
+      double ry = g->py[j] - yi;
+
+      double dist_sq = rx * rx + ry * ry + eps;
       double inv_dist = 1.0 / sqrt(dist_sq);
+      double inv_dist3 = inv_dist / dist_sq;
 
-      double factor = g->gravitational_constant * inv_dist / dist_sq;
+      double factor = G * g->mass[j] * inv_dist3;
 
-      double ax_i = rx * (factor * g->mass[j]);
-      double ay_i = ry * (factor * g->mass[j]);
-      double ax_j = rx * (-factor * g->mass[i]);
-      double ay_j = ry * (-factor * g->mass[i]);
-
-      ax[i] += ax_i;
-      ay[i] += ay_i;
-      ax[j] += ax_j;
-      ay[j] += ay_j;
+      axi += rx * factor;
+      ayi += ry * factor;
     }
+
+    ax[i] = axi;
+    ay[i] = ayi;
   }
 }
 
+
 void gravity_update(struct gravity *g, double dt) {
-  compute_accelerations(g, g->ax1, g->ay1);
+    const size_t n = g->entity_len;
 
-  for (size_t i = 0; i < g->entity_len; i++) {
-    g->px[i] += g->vx[i] * dt + 0.5 * g->ax1[i] * dt * dt;
-    g->py[i] += g->vy[i] * dt + 0.5 * g->ay1[i] * dt * dt;
-  }
+    compute_accelerations(g, g->ax1, g->ay1);
 
-  compute_accelerations(g, g->ax2, g->ay2);
+    #pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < n; i++) {
+        g->px[i] += g->vx[i] * dt + 0.5 * g->ax1[i] * dt * dt;
+        g->py[i] += g->vy[i] * dt + 0.5 * g->ay1[i] * dt * dt;
+    }
 
-  for (size_t i = 0; i < g->entity_len; i++) {
-    g->vx[i] += 0.5 * (g->ax1[i] + g->ax2[i]) * dt;
-    g->vy[i] += 0.5 * (g->ay1[i] + g->ay2[i]) * dt;
-  }
+    compute_accelerations(g, g->ax2, g->ay2);
+
+    #pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < n; i++) {
+        g->vx[i] += 0.5 * (g->ax1[i] + g->ax2[i]) * dt;
+        g->vy[i] += 0.5 * (g->ay1[i] + g->ay2[i]) * dt;
+    }
 }
