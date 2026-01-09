@@ -145,3 +145,12 @@ class InspectorUIState:
             if success:
                 simulation.apply(entity)
                 self._typing = ""
+
+    def on_merge(
+        self,
+        old1: SimulatedEntityHandle,
+        old2: SimulatedEntityHandle,
+        new: SimulatedEntityHandle,
+    ) -> None:
+        if self._selected_entity == old1 or self._selected_entity == old2:
+            self._selected_entity = new

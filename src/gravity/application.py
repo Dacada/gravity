@@ -182,6 +182,9 @@ def build_application(config: AppConfig) -> Application:
         config.simulation.physics.gravitational_constant,
     )
 
+    simulation.on_merge(inspector.on_merge)
+    simulation.on_merge(trail_controller.on_merge)
+
     game = GameState(
         simulation,
         inspector,

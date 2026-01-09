@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Iterator, Optional, Self
 
 import pygame
+from typing_extensions import Callable
 
 from gravity.config.schema.simulation import Control as ControlConfig
 from gravity.config.schema.simulation import Model as ModelConfig
@@ -9,6 +10,10 @@ from gravity.physics._core import MergeInfo, SimulatedEntityHandle
 from gravity.physics.core import SimulationCore
 from gravity.physics.model import SimulatedEntity
 from gravity.types import Color
+
+OnMergeCallback = Callable[
+    [SimulatedEntityHandle, SimulatedEntityHandle, SimulatedEntityHandle], None
+]
 
 
 @dataclass
@@ -194,6 +199,16 @@ class SimulationEntityOrderController:
             return None
         return self._nodes[handle].prev.handle
 
+    def merge(
+        self,
+        old1: SimulatedEntityHandle,
+        old2: SimulatedEntityHandle,
+        new: SimulatedEntityHandle,
+    ) -> None:
+        self.remove(old1)
+        self.remove(old2)
+        self.append(new)
+
 
 class SimulationEntityCounter:
     def __init__(self) -> None:
@@ -228,6 +243,16 @@ class SimulationEntityCounter:
 
         return self._indices[idx]
 
+    def merge(
+        self,
+        old1: SimulatedEntityHandle,
+        old2: SimulatedEntityHandle,
+        new: SimulatedEntityHandle,
+    ) -> None:
+        self.remove(old1)
+        self.remove(old2)
+        self.add(new)
+
 
 class SimulationController:
     def __init__(
@@ -246,9 +271,14 @@ class SimulationController:
 
         self._physics_loop_accumulator = 0.0
         self._entity_cache: dict[SimulatedEntityHandle, SimulatedEntity] = {}
+        self._on_merge_callbacks: list[OnMergeCallback] = []
 
         self._physics_timedelta = physics_timedelta
         self._physics_step_alloted_time_clamp = physics_step_alloted_time_clamp
+
+        self.on_merge(self._simulation_entity_descriptor.merge)
+        self.on_merge(self._simulation_entity_counter.merge)
+        self.on_merge(self._simulation_entity_order_controller.merge)
 
     @classmethod
     def from_config(
@@ -356,13 +386,8 @@ class SimulationController:
         for merge in merges:
             hdl1, hdl2 = merge.merged
             hdl_new = merge.into
-            self._simulation_entity_descriptor.merge(hdl1, hdl2, hdl_new)
-            self._simulation_entity_order_controller.remove(hdl1)
-            self._simulation_entity_order_controller.remove(hdl2)
-            self._simulation_entity_order_controller.append(hdl_new)
-            self._simulation_entity_counter.remove(hdl1)
-            self._simulation_entity_counter.remove(hdl2)
-            self._simulation_entity_counter.add(hdl_new)
+            for callback in self._on_merge_callbacks:
+                callback(hdl1, hdl2, hdl_new)
 
     def center_of_mass(self) -> pygame.Vector2:
         return self._simulation_core.center_of_mass()
@@ -390,3 +415,6 @@ class SimulationController:
         self, handle: SimulatedEntityHandle
     ) -> Optional[SimulatedEntityHandle]:
         return self._simulation_entity_order_controller.prev(handle)
+
+    def on_merge(self, callback: OnMergeCallback) -> None:
+        self._on_merge_callbacks.append(callback)

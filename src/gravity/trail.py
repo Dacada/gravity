@@ -69,3 +69,20 @@ class TrailController:
 
         for handle in invalid:
             self._samples.pop(handle)
+
+    def on_merge(
+        self,
+        old1: SimulatedEntityHandle,
+        old2: SimulatedEntityHandle,
+        new: SimulatedEntityHandle,
+    ) -> None:
+        to_delete = []
+        to_add = {}
+        for handle, samples in self._samples.items():
+            if handle == old1 or handle == old2:
+                to_delete.append(handle)
+                to_add[new] = samples
+
+        for handle in to_delete:
+            self._samples.pop(handle)
+        self._samples.update(to_add)
