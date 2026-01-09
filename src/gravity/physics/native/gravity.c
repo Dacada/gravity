@@ -519,8 +519,7 @@ static int merge_masses(struct gravity *g, struct gravity_handle *m1,
   return 0;
 }
 
-static int merge_all_masses(struct gravity *g,
-                            struct gravity_merge_info *info) {
+int gravity_merge_entities(struct gravity *g, struct gravity_merge_info *info) {
   info->nmerges = 0;
   info->merge1 = NULL;
   info->merge2 = NULL;
@@ -624,12 +623,7 @@ static void compute_accelerations(const struct gravity *g, double *ax,
   }
 }
 
-int gravity_update(struct gravity *g, double dt,
-                   struct gravity_merge_info *info) {
-  if (merge_all_masses(g, info) < 0) {
-    return -1;
-  }
-
+void gravity_update(struct gravity *g, double dt) {
   compute_accelerations(g, g->ax1, g->ay1);
 
   for (size_t i = 0; i < g->entity_len; i++) {
@@ -643,6 +637,4 @@ int gravity_update(struct gravity *g, double dt,
     g->vx[i] += 0.5 * (g->ax1[i] + g->ax2[i]) * dt;
     g->vy[i] += 0.5 * (g->ay1[i] + g->ay2[i]) * dt;
   }
-
-  return 0;
 }

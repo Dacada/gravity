@@ -372,13 +372,12 @@ class SimulationController:
         if dt > self._physics_step_alloted_time_clamp:
             dt = self._physics_step_alloted_time_clamp
 
-        merges: list[MergeInfo] = []
-
         self._physics_loop_accumulator += dt * self._time_scale
         while self._physics_loop_accumulator >= self._physics_timedelta:
-            merges.extend(self._simulation_core.update(self._physics_timedelta))
+            self._simulation_core.update(self._physics_timedelta)
             self._physics_loop_accumulator -= self._physics_timedelta
 
+        merges = self._simulation_core.merge_entities()
         self._process_merges(merges)
         self._entity_cache.clear()
 

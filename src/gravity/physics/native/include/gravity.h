@@ -59,7 +59,7 @@ struct gravity_entity {
 };
 
 /*
- * Information about entity merges that occurred during a physics update.
+ * Information about entity merges.
  *
  * For each merge i in [0, nmerges):
  * - merge1[i] and merge2[i] are the handles of the entities that were removed
@@ -351,22 +351,24 @@ void gravity_center_of_mass(const struct gravity *g, double *x, double *y);
 /*
  * Advance the simulation by a single time step.
  *
- * This updates positions and velocities according to gravitational interaction
- * and applies optional entity merging.
+ * This updates positions and velocities according to gravitational interaction.
+ */
+void gravity_update(struct gravity *g, double dt);
+
+/*
+ * This applies optional entity merging. If merging is disabled, it is a noop.
  *
- * If merging is enabled, information about merges that occurred during the step
- * is written into *info. Any memory stored in *info must be released using
- * gravity_merge_info_destroy().
+ * Information about merges is writtein into *info. Any memory stored in *info
+ * must be released using gravity_merge_info_destroy().
  *
- * This function may allocate memory. The info object must always be destoyed,
+ * This function allocates memory. The info object must always be destroyed,
  * even if allocation fails.
  *
  * Returns:
  * - 0 on success
- * - negative on allocation failure (object may be left partially updated).
+ * - negative on allocation failure
  */
-int gravity_update(struct gravity *g, double dt,
-                   struct gravity_merge_info *info);
+int gravity_merge_entities(struct gravity *g, struct gravity_merge_info *info);
 
 /*
  * Deallocate all memory owned by a gravity_merge_info object.

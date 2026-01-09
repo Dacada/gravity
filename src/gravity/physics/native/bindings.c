@@ -1,4 +1,3 @@
-#include <stddef.h>
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
@@ -419,8 +418,20 @@ static PyObject *NativeSimulationCore_update(PyObject *obj, PyObject *args) {
     return NULL;
   }
 
+  Py_BEGIN_ALLOW_THREADS;
+  gravity_update(&self->gravity, dt);
+  Py_END_ALLOW_THREADS;
+
+  Py_RETURN_NONE;
+}
+
+static PyObject *NativeSimulationCore_merge_entities(PyObject *obj,
+                                                     PyObject *unused) {
+  NativeSimulationCoreObject *self = (NativeSimulationCoreObject *)obj;
+  (void)unused;
+
   struct gravity_merge_info info;
-  if (gravity_update(&self->gravity, dt, &info) < 0) {
+  if (gravity_merge_entities(&self->gravity, &info) < 0) {
     gravity_merge_info_destroy(&self->gravity, &info);
     PyErr_NoMemory();
     return NULL;
@@ -487,6 +498,7 @@ static PyMethodDef NativeSimulationCore_methods[] = {
      METH_VARARGS, NULL},
     {"center_of_mass", NativeSimulationCore_center_of_mass, METH_NOARGS, NULL},
     {"update", NativeSimulationCore_update, METH_VARARGS, NULL},
+    {"merge_entities", NativeSimulationCore_merge_entities, METH_NOARGS, NULL},
     {NULL, NULL, 0, NULL},
 };
 
