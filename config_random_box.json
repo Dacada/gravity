@@ -29,7 +29,7 @@
         "physics": {
             "gravitational_constant": 100.0,
             "softening_factor": 0.5,
-            "enable_merging": true,
+            "enable_merging": false,
             "merge_distance_squared": 1
         },
         "initial_conditions": {
@@ -39,10 +39,10 @@
                     {
                         "entity": {
                             "type": "cloud",
-                            "count": 625,
+                            "count": 2025,
                             "region": {
                                 "shape": "box",
-                                "disorder": 1.5,
+                                "disorder": 0,
                                 "width": 500,
                                 "height": 500
                             },
