@@ -83,7 +83,7 @@ def apply_initial_conditions(
         s = random.uniform(0.6, 1.0)
         v = random.uniform(0.7, 1.0)
         r, g, b = colorsys.hsv_to_rgb(h, s, v)
-        return Color(int(r * 255), int(g * 255), int(v * 255))
+        return Color(int(r * 255), int(g * 255), int(b * 255))
 
     for entity in initial_conditions.compute_all_entities():
         handle = simulation.create(
