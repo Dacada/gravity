@@ -91,6 +91,7 @@ def apply_initial_conditions(
             vel=entity.vel,
             mass=entity.mass,
             name=entity.name,
+            color=entity.color,
         )
         if initial_conditions.funny:
             if trail_controller is not None:

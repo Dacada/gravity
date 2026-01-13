@@ -1,9 +1,11 @@
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Any, Literal, Optional, Union
 
+from pydantic import RootModel, field_validator
 from pydantic.fields import Field
 from pydantic.main import BaseModel
 
 from gravity.config.parse import IrrationalFloat
+from gravity.types import Color
 
 
 class LiteralProperty(BaseModel):
@@ -29,10 +31,19 @@ class UniformProperty(BaseModel):
     end: IrrationalFloat
 
 
-Property = Annotated[
+PropertyUnion = Annotated[
     Union[LiteralProperty, GaussProperty, GaussAbsoluteProperty, UniformProperty],
     Field(discriminator="type"),
 ]
+
+
+class Property(RootModel[PropertyUnion]):
+    @field_validator("root", mode="before")
+    @classmethod
+    def coerce_float(cls, v: Any) -> Any:
+        if isinstance(v, (int, float)):
+            return {"type": "literal", "value": float(v)}
+        return v
 
 
 class BoxRegion(BaseModel):
@@ -49,6 +60,7 @@ class SimpleEntity(BaseModel):
     type: Literal["simple"]
     mass: Property
     name: Optional[str] = None
+    color: Optional[Color] = None
 
 
 class SystemEntity(BaseModel):

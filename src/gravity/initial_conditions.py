@@ -7,6 +7,7 @@ from typing import Iterable, Optional, Self, assert_never
 import pygame
 
 from gravity.config.schema import initial_conditions as config
+from gravity.types import Color
 
 
 @dataclass
@@ -15,6 +16,7 @@ class InitialConditionsEntity:
     vel: pygame.Vector2
     mass: float
     name: Optional[str]
+    color: Optional[Color]
 
 
 class ResolvableValue(ABC):
@@ -65,14 +67,15 @@ class ResolvableUniform(ResolvableValue):
 
 
 def resolvable_from_config(cfg: config.Property) -> ResolvableValue:
-    if isinstance(cfg, config.LiteralProperty):
-        return ResolvableLiteral(cfg.value)
-    elif isinstance(cfg, config.GaussProperty):
-        return ResolvableGaussian(cfg.mean, cfg.sigma, False)
-    elif isinstance(cfg, config.GaussAbsoluteProperty):
-        return ResolvableGaussian(cfg.mean, cfg.sigma, True)
-    elif isinstance(cfg, config.UniformProperty):
-        return ResolvableUniform(cfg.start, cfg.end)
+    prop = cfg.root
+    if isinstance(prop, config.LiteralProperty):
+        return ResolvableLiteral(prop.value)
+    elif isinstance(prop, config.GaussProperty):
+        return ResolvableGaussian(prop.mean, prop.sigma, False)
+    elif isinstance(prop, config.GaussAbsoluteProperty):
+        return ResolvableGaussian(prop.mean, prop.sigma, True)
+    elif isinstance(prop, config.UniformProperty):
+        return ResolvableUniform(prop.start, prop.end)
 
 
 class Entity(ABC):
@@ -92,13 +95,16 @@ class Entity(ABC):
 
 
 class SimpleEntity(Entity):
-    def __init__(self, mass: ResolvableValue, name: Optional[str]) -> None:
+    def __init__(
+        self, mass: ResolvableValue, name: Optional[str], color: Optional[Color]
+    ) -> None:
         self._mass = mass
         self._name = name
+        self._color = color
 
     @classmethod
     def from_config(cls, cfg: config.SimpleEntity) -> Self:
-        return cls(resolvable_from_config(cfg.mass), cfg.name)
+        return cls(resolvable_from_config(cfg.mass), cfg.name, cfg.color)
 
     def total_mass(self, rand: Random) -> float:
         return self._mass.resolve(rand)
@@ -115,6 +121,7 @@ class SimpleEntity(Entity):
             vel_offset,
             self.total_mass(rand),
             self._name,
+            self._color,
         )
 
 
@@ -301,7 +308,7 @@ def create_cloud_system(cfg: config.CloudEntity, rand: Random) -> SystemEntity:
     positions = create_lattice(cfg.region, cfg.count, rand)
     system = SystemEntity()
     for position in positions:
-        entity = SimpleEntity(resolvable_from_config(cfg.mass), None)
+        entity = SimpleEntity(resolvable_from_config(cfg.mass), None, None)
         velocity = (
             resolvable_from_config(cfg.velocity[0]),
             resolvable_from_config(cfg.velocity[1]),
